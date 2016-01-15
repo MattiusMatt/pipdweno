@@ -43,10 +43,12 @@ void setup() {
   tft.setTextColor(ILI9340_GREEN, ILI9340_BLACK);
   tft.setTextSize(1);
 
-  // Draw initial screen
-  bmpDraw("1.bmp", 0, 0);
+  // Splash
+  loadText("0.txt", 0, 0);
+  delay(1000);
 
-  loadText("0.txt", 10, 10);
+  // Draw screen 1
+  bmpDraw("0.bmp", 0, 0);
 }
 
 void loop() {
