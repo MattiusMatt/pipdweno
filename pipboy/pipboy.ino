@@ -99,8 +99,6 @@ void loop() {
 // Helper functions
 
 void loadScreen(uint16_t screen) {
-  tft.fillScreen(ILI9340_BLACK);
-  
   switch (screen) {
     case 0:
       bmpDraw("0.bmp", 0, 0);
@@ -150,7 +148,7 @@ void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
 // makes loading a little faster.  20 pixels seems a
 // good balance.
 
-#define BUFFPIXEL 20
+#define BUFFPIXEL 40
 
 void bmpDraw(char *filename, uint16_t x, uint16_t y) {
 
