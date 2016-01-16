@@ -23,6 +23,9 @@
 // tft variable for writing to the screen
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
+// Sound
+int speakerOut = 6;
+
 void setup() {
   // Debug using serial
   Serial.begin(9600);
@@ -35,29 +38,93 @@ void setup() {
     return;
   }
   Serial.println("OK!");
+
+  // Sound
   
   // TFT
   tft.begin();
   tft.setRotation(3);
-  tft.fillScreen(ILI9340_BLACK);
   tft.setTextColor(ILI9340_GREEN, ILI9340_BLACK);
   tft.setTextSize(1);
 
-  // Splash
-  loadText("0.txt", 0, 0);
+  // Splash 0
+  tft.fillScreen(ILI9340_BLACK);
+  loadText("0.txt", 0, 0, 0);
+  delay(1000);
+
+  // Loading
+  tft.fillScreen(ILI9340_BLACK);
+  loadText("1.txt", 0, 0, 20);
+  delay(1000);
+
+  // Vault Boy Loading
+  tft.fillScreen(ILI9340_BLACK);
+  bmpDraw("l.bmp", 95, 35);
   delay(1000);
 
   // Draw screen 1
-  bmpDraw("0.bmp", 0, 0);
+  loadScreen(0);
 }
 
 void loop() {
-
+  // Serial control
+  if (Serial.available()) {
+    switch(Serial.read()){
+      case '1': 
+        loadScreen(0);
+        break;
+        
+      case '2':
+        loadScreen(1);
+        break;
+        
+      case '3':
+        loadScreen(2);
+        break;
+        
+      case '4':
+        loadScreen(3);
+        break;
+        
+      case '5':
+        loadScreen(4);
+        break;
+        
+      default:
+        break;
+    }
+  }
 }
 
 // Helper functions
 
-void loadText(char *file, uint16_t x, uint16_t y) {
+void loadScreen(uint16_t screen) {
+  tft.fillScreen(ILI9340_BLACK);
+  
+  switch (screen) {
+    case 0:
+      bmpDraw("0.bmp", 0, 0);
+      break;
+
+    case 1:
+      bmpDraw("1.bmp", 0, 0);
+      break;
+
+    case 2:
+      bmpDraw("2.bmp", 0, 0);
+      break;
+
+    case 3:
+      bmpDraw("3.bmp", 0, 0);
+      break;
+
+    case 4:
+      bmpDraw("4.bmp", 0, 0);
+      break;
+  }
+}
+
+void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
   File txt = SD.open(file);
   
   if (txt) {
@@ -67,6 +134,7 @@ void loadText(char *file, uint16_t x, uint16_t y) {
  
     while (txt.available()) {
       tft.print(char(txt.read()));
+      delay(sleep);
     }
     
     txt.close();
