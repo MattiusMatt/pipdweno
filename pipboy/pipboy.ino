@@ -70,8 +70,12 @@ void loop() {
   // Serial control
   if (Serial.available()) {
     switch(Serial.read()){
-      case '1': 
+      case '0': 
         loadPip("0.pip");
+        break;
+
+      case '1': 
+        loadScreen(0);
         break;
         
       case '2':
