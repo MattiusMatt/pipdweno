@@ -140,16 +140,25 @@ void loadPip(char *screen) {
 void renderPipImage(File &pip, uint16_t x, uint16_t y) {
   Serial.print("Image: ");
 
+  int pos = 0;
+  char imageName[20];
+
   while (pip.available()) {
     uint8_t character = pip.read();
 
     if (character == 13) {
       pip.read(); // Om nom nom
-      return;
+      break;
     }
 
-    Serial.print(char(character));
+    imageName[pos] = char(character);
+
+    Serial.print(imageName[pos]);
+    
+    pos ++;
   }
+
+  bmpDraw((char *)&imageName, x, y);
 }
 
 void renderPipText(File &pip, uint16_t x, uint16_t y) {
