@@ -71,7 +71,7 @@ void loop() {
   if (Serial.available()) {
     switch(Serial.read()){
       case '1': 
-        loadScreen(0);
+        loadPip("0.pip");
         break;
         
       case '2':
@@ -97,6 +97,83 @@ void loop() {
 }
 
 // Helper functions
+
+void loadPip(char *screen) {
+  File pip = SD.open(screen);
+
+  Serial.println();
+  Serial.print("Loading PIP: ");
+  Serial.print(screen);
+  
+  if (pip) {
+    tft.fillScreen(ILI9340_BLACK);
+
+    while (pip.available()) {
+      uint8_t type = pip.read();
+      uint16_t x = read16(pip);
+      uint16_t y = read16(pip);
+  
+      Serial.println();
+      Serial.print("X: ");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print("Y: ");
+      Serial.println(y);
+  
+      switch (type) {
+        // Text
+        case 0:
+          renderPipText(pip, x, y);
+          break;
+
+        // Image
+        case 1:
+          renderPipImage(pip, x, y);
+          break;
+      }
+    }
+    
+    pip.close();
+  }
+}
+
+void renderPipImage(File &pip, uint16_t x, uint16_t y) {
+  Serial.print("Image: ");
+
+  while (pip.available()) {
+    uint8_t character = pip.read();
+
+    if (character == 13) {
+      pip.read(); // Om nom nom
+      return;
+    }
+
+    Serial.print(char(character));
+  }
+}
+
+void renderPipText(File &pip, uint16_t x, uint16_t y) {
+  uint16_t textSize = pip.read();
+
+  tft.setTextSize(textSize);
+  tft.setCursor(x, y);
+
+  Serial.print("Size: ");
+  Serial.println(textSize);
+  Serial.print("Text: ");
+  
+  while (pip.available()) {
+    uint8_t character = pip.read();
+    
+    if (character == 13) {
+      pip.read(); // Om nom nom
+      return;
+    }
+
+    Serial.print(char(character));
+    tft.print(char(character));
+  }
+}
 
 void loadScreen(uint16_t screen) {
   switch (screen) {
