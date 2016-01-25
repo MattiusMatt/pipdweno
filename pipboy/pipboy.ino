@@ -145,7 +145,7 @@ void renderPipImage(File &pip, uint16_t x, uint16_t y) {
   Serial.print("Image: ");
 
   int pos = 0;
-  char imageName[20];
+  String imageName;
 
   while (pip.available()) {
     uint8_t character = pip.read();
@@ -155,19 +155,27 @@ void renderPipImage(File &pip, uint16_t x, uint16_t y) {
       break;
     }
 
-    imageName[pos] = char(character);
-
-    Serial.print(imageName[pos]);
+    imageName += char(character);
     
     pos ++;
   }
 
-  bmpDraw((char *)&imageName, x, y);
+  Serial.print(imageName);
+
+  int len = imageName.length() + 1;
+  char imageChars[len];
+
+  imageName.toCharArray(imageChars, len);
+
+  bmpDraw(imageChars, x, y);
 }
 
 void renderPipText(File &pip, uint16_t x, uint16_t y) {
-  uint16_t textSize = pip.read();
-
+  uint8_t textSize = pip.read();
+  //uint16_t textColor = read16(pip);
+  //uint16_t backColor = read16(pip);
+  
+  //tft.setTextColor(textColor, backColor);
   tft.setTextSize(textSize);
   tft.setCursor(x, y);
 
