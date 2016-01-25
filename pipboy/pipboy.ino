@@ -44,7 +44,7 @@ void setup() {
   // TFT
   tft.begin();
   tft.setRotation(3);
-  tft.setTextColor(ILI9340_GREEN, ILI9340_BLACK);
+  tft.setTextColor(ILI9340_GREEN);
   tft.setTextSize(1);
 
   // Splash 0
