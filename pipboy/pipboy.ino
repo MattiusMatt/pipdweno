@@ -172,15 +172,19 @@ void renderPipImage(File &pip, uint16_t x, uint16_t y) {
 
 void renderPipText(File &pip, uint16_t x, uint16_t y) {
   uint8_t textSize = pip.read();
-  //uint16_t textColor = read16(pip);
-  //uint16_t backColor = read16(pip);
+  uint16_t textColor = read16(pip);
+  uint16_t backColor = read16(pip);
   
-  //tft.setTextColor(textColor, backColor);
+  tft.setTextColor(textColor, backColor);
   tft.setTextSize(textSize);
   tft.setCursor(x, y);
 
   Serial.print("Size: ");
   Serial.println(textSize);
+  Serial.print("Colour: ");
+  Serial.println(textColor);
+  Serial.print("Back Colour: ");
+  Serial.println(backColor);
   Serial.print("Text: ");
   
   while (pip.available()) {
