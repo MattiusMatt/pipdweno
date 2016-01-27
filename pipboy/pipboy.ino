@@ -93,6 +93,10 @@ void loop() {
       case '5':
         loadScreen(4);
         break;
+
+      case 'u':
+        writePip();
+        break;
         
       default:
         break;
@@ -101,6 +105,32 @@ void loop() {
 }
 
 // Helper functions
+
+void writePip() {
+  Serial.println("Open PIP");
+
+  SD.remove("0.pip");
+  
+  File pipWriter = SD.open("0.pip", FILE_WRITE);
+        
+  while (true) {
+    uint8_t data = Serial.read();
+
+    if (data == 11) {
+      break;
+    }
+
+    if (data != 255) {
+      pipWriter.write(data);
+      Serial.print(data);
+    }
+  }
+
+  Serial.println("Close PIP");
+  pipWriter.close();
+
+  loadPip("0.pip");
+}
 
 void loadPip(char *screen) {
   File pip = SD.open(screen);
@@ -174,8 +204,13 @@ void renderPipText(File &pip, uint16_t x, uint16_t y) {
   uint8_t textSize = pip.read();
   uint16_t textColor = read16(pip);
   uint16_t backColor = read16(pip);
+
+  if (backColor == 0) {
+    tft.setTextColor(textColor);
+  } else {
+    tft.setTextColor(textColor, backColor);
+  }
   
-  tft.setTextColor(textColor, backColor);
   tft.setTextSize(textSize);
   tft.setCursor(x, y);
 
