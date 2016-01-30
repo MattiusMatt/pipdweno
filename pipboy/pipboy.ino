@@ -112,18 +112,12 @@ void writePip() {
   SD.remove("0.pip");
   
   File pipWriter = SD.open("0.pip", FILE_WRITE);
-        
-  while (true) {
-    uint8_t data = Serial.read();
+  uint8_t data = Serial.read();
+  
+  while (data != 255 && data != 11) {
+    pipWriter.write(data);
 
-    if (data == 11) {
-      break;
-    }
-
-    if (data != 255) {
-      pipWriter.write(data);
-      Serial.print(data);
-    }
+    data = Serial.read();
   }
 
   Serial.println("Close PIP");
