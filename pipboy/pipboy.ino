@@ -63,67 +63,81 @@ void setup() {
   delay(1000);
 
   // Draw screen 1
-  loadScreen(0);
+  loadPip("0.pip");
 }
+
+bool writePipMode = false;
 
 void loop() {
   // Serial control
-  if (Serial.available()) {
-    switch(Serial.read()){
-      case '0': 
-        loadPip("0.pip");
-        break;
-
-      case '1': 
-        loadScreen(0);
-        break;
-        
-      case '2':
-        loadScreen(1);
-        break;
-        
-      case '3':
-        loadScreen(2);
-        break;
-        
-      case '4':
-        loadScreen(3);
-        break;
-        
-      case '5':
-        loadScreen(4);
-        break;
-
-      case 'u':
-        writePip();
-        break;
-        
-      default:
-        break;
+  if (writePipMode) {
+    writePipMode = !writePip(true);
+    
+    if (!writePipMode) {
+      loadPip("0.pip");
+    }
+  } else {
+    if (Serial.available()) {
+      switch(Serial.read()){
+        case '0': 
+          loadPip("0.pip");
+          break;
+  
+        case '1': 
+          loadScreen(0);
+          break;
+          
+        case '2':
+          loadScreen(1);
+          break;
+          
+        case '3':
+          loadScreen(2);
+          break;
+          
+        case '4':
+          loadScreen(3);
+          break;
+          
+        case '5':
+          loadScreen(4);
+          break;
+  
+        case 'u':
+          writePipMode = !writePip(false);
+          break;
+          
+        default:
+          break;
+      }
     }
   }
 }
 
 // Helper functions
 
-void writePip() {
+bool writePip(bool appendMode) {
   Serial.println("Open PIP");
 
-  SD.remove("0.pip");
+  if (!appendMode) {
+    SD.remove("0.pip");
+  }
   
   File pipWriter = SD.open("0.pip", FILE_WRITE);
   uint8_t data = Serial.read();
   
-  while (data != 255 && data != 11) {
+  while (Serial.available() && data != 11) {
     pipWriter.write(data);
+
+    Serial.print((char)data);
 
     data = Serial.read();
   }
 
-  Serial.println("Close PIP");
   pipWriter.close();
+  Serial.println("Close PIP");
 
-  loadPip("0.pip");
+  return data == 11;
 }
 
 void loadPip(char *screen) {
