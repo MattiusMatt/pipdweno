@@ -124,14 +124,16 @@ bool writePip(bool appendMode) {
   }
   
   File pipWriter = SD.open("0.pip", FILE_WRITE);
-  uint8_t data = Serial.read();
+  uint8_t data;
   
-  while (Serial.available() && data != 11) {
+  while (Serial.available()) {
+    data = Serial.read();
+
+    if (data == 11) { break; }
+    
     pipWriter.write(data);
 
     Serial.print((char)data);
-
-    data = Serial.read();
   }
 
   pipWriter.close();
