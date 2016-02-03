@@ -174,11 +174,33 @@ void loadPip(char *screen) {
         case 1:
           renderPipImage(pip, x, y);
           break;
+
+        // Line
+        case 2:
+          renderPipLine(pip, x, y);
+          break;
       }
     }
     
     pip.close();
   }
+}
+
+void renderPipLine(File &pip, uint16_t x, uint16_t y) {
+  uint16_t endX = read16(pip);
+  uint16_t endY = read16(pip);
+  uint16_t color = read16(pip);
+
+  Serial.print("End X: ");
+  Serial.println(endX);
+  Serial.print("End Y: ");
+  Serial.println(endY);
+  Serial.print("Colour: ");
+  Serial.println(color);
+
+  tft.drawLine(x, y, endX, endY, color);
+
+  read16(pip); // Om nom nom
 }
 
 void renderPipImage(File &pip, uint16_t x, uint16_t y) {
