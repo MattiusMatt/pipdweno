@@ -61,14 +61,44 @@ void setup() {
   tft.fillScreen(ILI9340_BLACK);
   bmpDraw("l.bmp", 95, 35);
   delay(1000);
-
-  // Draw screen 1
-  loadPip("0.pip");
 }
 
 bool writePipMode = false;
+int currentScreen = 0;
 
 void loop() {
+  int newScreen = readMainSwitch();
+
+  if (newScreen != currentScreen) {
+    delay(500);
+
+    newScreen = readMainSwitch();
+    
+    switch(newScreen){
+      case 1: 
+        loadPip("0.pip");
+        break;
+        
+      case 2:
+        loadScreen(1);
+        break;
+        
+      case 3:
+        loadScreen(2);
+        break;
+        
+      case 4:
+        loadScreen(3);
+        break;
+        
+      case 5:
+        loadScreen(4);
+        break;
+    }
+    
+    currentScreen = newScreen;  
+  }
+  
   // Serial control
   if (writePipMode) {
     writePipMode = !writePip(true);
@@ -79,30 +109,6 @@ void loop() {
   } else {
     if (Serial.available()) {
       switch(Serial.read()){
-        case '0': 
-          loadPip("0.pip");
-          break;
-  
-        case '1': 
-          loadScreen(0);
-          break;
-          
-        case '2':
-          loadScreen(1);
-          break;
-          
-        case '3':
-          loadScreen(2);
-          break;
-          
-        case '4':
-          loadScreen(3);
-          break;
-          
-        case '5':
-          loadScreen(4);
-          break;
-  
         case 'u':
           writePipMode = !writePip(false);
           break;
@@ -115,6 +121,23 @@ void loop() {
 }
 
 // Helper functions
+
+int readMainSwitch() {
+  int sensorValue = analogRead(A0);
+
+  // Main Rotary Switch
+  // 0-2        = 1
+  // 1009-1010  = 2
+  // 974-975    = 3
+  // 928-929    = 4
+  // 699-700    = 5
+
+  if (sensorValue > 30 && sensorValue < 600) { return 1; }
+  else if (sensorValue > 680 && sensorValue < 720) { return 5; }
+  else if (sensorValue > 900 && sensorValue < 950) { return 4; }
+  else if (sensorValue > 960 && sensorValue < 995) { return 3; }
+  else if (sensorValue > 1000) { return 2; }
+}
 
 bool writePip(bool appendMode) {
   Serial.println("Open PIP");
