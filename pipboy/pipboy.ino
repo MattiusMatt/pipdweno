@@ -75,24 +75,29 @@ void loop() {
     newScreen = readMainSwitch();
     
     switch(newScreen){
-      case 1: 
+      case 1:
+        //loadScreen(0);
         loadPip("0.pip");
         break;
         
       case 2:
-        loadScreen(1);
+        //loadScreen(1);
+        loadPip("1.pip");
         break;
         
       case 3:
-        loadScreen(2);
+        //loadScreen(2);
+        loadPip("2.pip");
         break;
         
       case 4:
-        loadScreen(3);
+        //loadScreen(3);
+        loadPip("3.pip");
         break;
         
       case 5:
-        loadScreen(4);
+        //loadScreen(4);
+        loadPip("4.pip");
         break;
     }
     
@@ -104,7 +109,7 @@ void loop() {
     writePipMode = !writePip(true);
     
     if (!writePipMode) {
-      loadPip("0.pip");
+      loadPip("t.pip");
     }
   } else {
     if (Serial.available()) {
@@ -136,17 +141,19 @@ int readMainSwitch() {
   else if (sensorValue > 680 && sensorValue < 720) { return 5; }
   else if (sensorValue > 900 && sensorValue < 950) { return 4; }
   else if (sensorValue > 960 && sensorValue < 995) { return 3; }
-  else if (sensorValue > 1000) { return 2; }
+  else if (sensorValue > 995 && sensorValue < 1020) { return 2; }
+
+  return currentScreen;
 }
 
 bool writePip(bool appendMode) {
   Serial.println("Open PIP");
 
   if (!appendMode) {
-    SD.remove("0.pip");
+    SD.remove("t.pip");
   }
   
-  File pipWriter = SD.open("0.pip", FILE_WRITE);
+  File pipWriter = SD.open("t.pip", FILE_WRITE);
   uint8_t data;
   
   while (Serial.available()) {
@@ -202,11 +209,42 @@ void loadPip(char *screen) {
         case 2:
           renderPipLine(pip, x, y);
           break;
+
+        // Rect
+        case 3:
+          renderPipRect(pip, x, y, false);
+          break;
+
+        // Fill Rect
+        case 4:
+          renderPipRect(pip, x, y, true);
+          break;
       }
     }
     
     pip.close();
   }
+}
+
+void renderPipRect(File &pip, uint16_t x, uint16_t y, bool fill) {
+  uint16_t width = read16(pip);
+  uint16_t height = read16(pip);
+  uint16_t color = read16(pip);
+
+  Serial.print("Width: ");
+  Serial.println(width);
+  Serial.print("Height: ");
+  Serial.println(height);
+  Serial.print("Colour: ");
+  Serial.println(color);
+
+  if (fill) {
+    tft.fillRect(x, y, width, height, color);
+  } else {
+    tft.drawRect(x, y, width, height, color);
+  }
+
+  read16(pip); // Om nom nom
 }
 
 void renderPipLine(File &pip, uint16_t x, uint16_t y) {
