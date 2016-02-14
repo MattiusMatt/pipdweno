@@ -12,7 +12,7 @@
 #endif
 
 // TFT Pins
-// pin 11 = MOSI, pin 12 = MISO, pin 13 = SCK
+// pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
 #define TFT_RST 8
 #define TFT_DC 9
 #define TFT_CS 10
@@ -128,7 +128,7 @@ void loop() {
 // Helper functions
 
 int readMainSwitch() {
-  int sensorValue = analogRead(A0);
+  int sensorValue = analogRead(A7);
 
   // Main Rotary Switch
   // 0-2        = 1
