@@ -4,6 +4,7 @@
 #include <gfxfont.h>
 #include <SPI.h>
 #include <SD.h>
+//#include <TMRpcm.h>
 
 // Comment here when I know what this is for??
 #if defined(__SAM3X8E__)
@@ -24,22 +25,26 @@
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
 // Sound
-int speakerOut = 6;
+//TMRpcm audio;
 
 void setup() {
   // Debug using serial
   Serial.begin(9600);
 
   // SD Card
-  Serial.print("Initializing SD card...");
+  //Serial.print("Initializing SD card...");
   
   if (!SD.begin(SD_CS)) {
     Serial.println("failed!");
     return;
   }
-  Serial.println("OK!");
+  //Serial.println("OK!");
 
   // Sound
+  //audio.speakerPin = 6;
+  //audio.setVolume(5);
+  //audio.play("1.wav");
+  //audio.loop(1);
   
   // TFT
   tft.begin();
@@ -147,7 +152,7 @@ int readMainSwitch() {
 }
 
 bool writePip(bool appendMode) {
-  Serial.println("Open PIP");
+  //Serial.println("Open PIP");
 
   if (!appendMode) {
     SD.remove("t.pip");
@@ -163,11 +168,11 @@ bool writePip(bool appendMode) {
     
     pipWriter.write(data);
 
-    Serial.print((char)data);
+    //Serial.print((char)data);
   }
 
   pipWriter.close();
-  Serial.println("Close PIP");
+  //Serial.println("Close PIP");
 
   return data == 11;
 }
@@ -175,9 +180,9 @@ bool writePip(bool appendMode) {
 void loadPip(char *screen) {
   File pip = SD.open(screen);
 
-  Serial.println();
-  Serial.print("Loading PIP: ");
-  Serial.print(screen);
+  //Serial.println();
+  //Serial.print("Loading PIP: ");
+  //Serial.print(screen);
   
   if (pip) {
     tft.fillScreen(ILI9340_BLACK);
@@ -187,12 +192,12 @@ void loadPip(char *screen) {
       uint16_t x = read16(pip);
       uint16_t y = read16(pip);
   
-      Serial.println();
-      Serial.print("X: ");
-      Serial.print(x);
-      Serial.print(" ");
-      Serial.print("Y: ");
-      Serial.println(y);
+      //Serial.println();
+      //Serial.print("X: ");
+      //Serial.print(x);
+      //Serial.print(" ");
+      //Serial.print("Y: ");
+      //Serial.println(y);
   
       switch (type) {
         // Text
@@ -231,12 +236,12 @@ void renderPipRect(File &pip, uint16_t x, uint16_t y, bool fill) {
   uint16_t height = read16(pip);
   uint16_t color = read16(pip);
 
-  Serial.print("Width: ");
-  Serial.println(width);
-  Serial.print("Height: ");
-  Serial.println(height);
-  Serial.print("Colour: ");
-  Serial.println(color);
+  //Serial.print("Width: ");
+  //Serial.println(width);
+  //Serial.print("Height: ");
+  //Serial.println(height);
+  //Serial.print("Colour: ");
+  //Serial.println(color);
 
   if (fill) {
     tft.fillRect(x, y, width, height, color);
@@ -252,12 +257,12 @@ void renderPipLine(File &pip, uint16_t x, uint16_t y) {
   uint16_t endY = read16(pip);
   uint16_t color = read16(pip);
 
-  Serial.print("End X: ");
-  Serial.println(endX);
-  Serial.print("End Y: ");
-  Serial.println(endY);
-  Serial.print("Colour: ");
-  Serial.println(color);
+  //Serial.print("End X: ");
+  //Serial.println(endX);
+  //Serial.print("End Y: ");
+  //Serial.println(endY);
+  //Serial.print("Colour: ");
+  //Serial.println(color);
 
   tft.drawLine(x, y, endX, endY, color);
 
@@ -265,7 +270,7 @@ void renderPipLine(File &pip, uint16_t x, uint16_t y) {
 }
 
 void renderPipImage(File &pip, uint16_t x, uint16_t y) {
-  Serial.print("Image: ");
+  //Serial.print("Image: ");
 
   int pos = 0;
   String imageName;
@@ -283,7 +288,7 @@ void renderPipImage(File &pip, uint16_t x, uint16_t y) {
     pos ++;
   }
 
-  Serial.print(imageName);
+  //Serial.print(imageName);
 
   int len = imageName.length() + 1;
   char imageChars[len];
@@ -307,13 +312,13 @@ void renderPipText(File &pip, uint16_t x, uint16_t y) {
   tft.setTextSize(textSize);
   tft.setCursor(x, y);
 
-  Serial.print("Size: ");
-  Serial.println(textSize);
-  Serial.print("Colour: ");
-  Serial.println(textColor);
-  Serial.print("Back Colour: ");
-  Serial.println(backColor);
-  Serial.print("Text: ");
+  //Serial.print("Size: ");
+  //Serial.println(textSize);
+  //Serial.print("Colour: ");
+  //Serial.println(textColor);
+  //Serial.print("Back Colour: ");
+  //Serial.println(backColor);
+  //Serial.print("Text: ");
   
   while (pip.available()) {
     uint8_t character = pip.read();
@@ -323,7 +328,7 @@ void renderPipText(File &pip, uint16_t x, uint16_t y) {
       return;
     }
 
-    Serial.print(char(character));
+    //Serial.print(char(character));
     tft.print(char(character));
   }
 }
@@ -356,7 +361,7 @@ void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
   File txt = SD.open(file);
   
   if (txt) {
-    Serial.println(file);
+    //Serial.println(file);
 
     tft.setCursor(x, y);
  
@@ -397,10 +402,10 @@ void bmpDraw(char *filename, uint16_t x, uint16_t y) {
 
   if((x >= tft.width()) || (y >= tft.height())) return;
 
-  Serial.println();
-  Serial.print("Loading image '");
-  Serial.print(filename);
-  Serial.println('\'');
+  //Serial.println();
+  //Serial.print("Loading image '");
+  //Serial.print(filename);
+  //Serial.println('\'');
 
   // Open requested file on SD card
   if ((bmpFile = SD.open(filename)) == NULL) {
