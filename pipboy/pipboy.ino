@@ -5,6 +5,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <TMRpcm.h>
+#include <Encoder.h>
 
 // Comment here when I know what this is for??
 #if defined(__SAM3X8E__)
@@ -23,6 +24,9 @@
 
 // tft variable for writing to the screen
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
+
+// Rotary Encoder
+Encoder encoder(21, 20);
 
 // Sound
 TMRpcm audio;
@@ -71,7 +75,18 @@ void setup() {
 bool writePipMode = false;
 int currentScreen = 0;
 
+long oldPosition  = -999;
+
 void loop() {
+  // Rotary Encoder
+  long newPosition = encoder.read();
+
+  if (newPosition != oldPosition) {
+    oldPosition = newPosition;
+    Serial.println(newPosition);
+  }
+  
+  // Main Screen
   int newScreen = readMainSwitch();
 
   if (newScreen != currentScreen) {
