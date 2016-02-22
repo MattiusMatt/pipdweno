@@ -26,7 +26,7 @@
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
 // Rotary Encoder
-Encoder encoder(21, 20);
+Encoder encoder(20, 21);
 
 // Sound
 TMRpcm audio;
@@ -69,23 +69,19 @@ void setup() {
   bmpDraw("l.bmp", 95, 35);
   delay(1000);
 
-  play("1.wav");
+  //play("1.wav");
 }
 
+// Serial Vars
 bool writePipMode = false;
+
+// Main Screen Vars
 int currentScreen = 0;
 
+// Second Screen Vars
 long oldPosition  = -999;
 
 void loop() {
-  // Rotary Encoder
-  long newPosition = encoder.read();
-
-  if (newPosition != oldPosition) {
-    oldPosition = newPosition;
-    Serial.println(newPosition);
-  }
-  
   // Main Screen
   int newScreen = readMainSwitch();
 
@@ -123,6 +119,15 @@ void loop() {
     
     currentScreen = newScreen;  
   }
+
+  // Sub Screen
+  long newPosition = encoder.read() / 2;
+
+  if (newPosition != oldPosition) {
+    oldPosition = newPosition;
+    Serial.println(newPosition);
+    drawSubScreen(newPosition);
+  }
   
   // Serial control
   if (writePipMode) {
@@ -147,6 +152,37 @@ void loop() {
 
 // Helper functions
 
+// Sub Screen
+uint16_t menuColours[3] = { 2016, 800, 416 };
+String subScreens[8];
+
+void initSubScreens() {
+  subScreens[0] = "STATUS";
+  subScreens[1] = "SPECIAL";
+  subScreens[2] = "PERKS";
+}
+
+void drawSubScreen(uint8_t current) {
+  if (current < 0 || current > 7) { return; }
+
+  Serial.print("Loading Sub Screen: ");
+  Serial.println(current);
+  
+  tft.setTextSize(1);
+  tft.setCursor(45, 25);
+  tft.fillRect(0, 25, 320, 10, ILI9340_BLACK);
+
+  for (uint8_t i = current; i < current + 3; i++) {
+    tft.setTextColor(menuColours[i - current], ILI9340_BLACK);
+    
+    tft.print(subScreens[i]);
+    tft.print(" ");
+  }
+
+  tft.fillRect(0, 35, 320, 185, ILI9340_BLACK);
+}
+
+//Sound
 void play(char *file) {
   audio.play(file);
 
@@ -252,6 +288,8 @@ void loadPip(char *screen) {
     }
     
     pip.close();
+
+    initSubScreens();
   }
 }
 
