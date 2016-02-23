@@ -76,10 +76,10 @@ void setup() {
 bool writePipMode = false;
 
 // Main Screen Vars
-int currentScreen = 0;
+int currentScreen = -1;
 
 // Second Screen Vars
-long currentSubScreen  = 0;
+long currentSubScreen = 0;
 
 void loop() {
   // Main Screen
@@ -91,28 +91,32 @@ void loop() {
     newScreen = readMainSwitch();
     
     switch(newScreen){
-      case 1:
+      case 0:
         loadPip("0.pip", true);
         break;
         
-      case 2:
+      case 1:
         loadPip("1.pip", true);
         break;
         
-      case 3:
+      case 2:
         loadPip("2.pip", true);
         break;
         
-      case 4:
+      case 3:
         loadPip("3.pip", true);
         break;
         
-      case 5:
+      case 4:
         loadPip("4.pip", true);
         break;
     }
     
     currentScreen = newScreen;
+
+    // Reset Sub Screen
+    currentSubScreen = 0;
+    encoder.write(0);
     drawSubScreen(currentSubScreen);
   }
 
@@ -123,10 +127,16 @@ void loop() {
     delay(500);
 
     newSubScreen = encoder.read() / 2;
+
+    Serial.println();
+    Serial.print("New Encoder Value: ");
+    Serial.println(newSubScreen);
     
-    currentSubScreen = newSubScreen;
-    Serial.println(currentSubScreen);
-    drawSubScreen(currentSubScreen);
+    if (drawSubScreen(newSubScreen)) {
+      currentSubScreen = newSubScreen;
+    } else {
+      encoder.write(currentSubScreen * 2);
+    }
   }
   
   // Serial control
@@ -202,8 +212,8 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
   Serial.println(noOfSubScreens);
 }
 
-void drawSubScreen(int current) {
-  if (current < 0 || (current > noOfSubScreens - 1)) { return; }
+bool drawSubScreen(int current) {
+  if (current < 0 || (current > noOfSubScreens - 1)) { return false; }
 
   Serial.print("Loading Sub Screen: ");
   Serial.println(current);
@@ -222,7 +232,7 @@ void drawSubScreen(int current) {
   tft.fillRect(0, 35, 320, 185, ILI9340_BLACK);
 
   String subScreen = "";
-  subScreen.concat(currentScreen - 1);
+  subScreen.concat(currentScreen);
   subScreen.concat("-");
   subScreen.concat(current);
   subScreen.concat(".pip");
@@ -232,6 +242,8 @@ void drawSubScreen(int current) {
   subScreen.toCharArray(subScreenName, len);
   
   loadPip(subScreenName, false);
+
+  return true;
 }
 
 //Sound
@@ -254,11 +266,11 @@ int readMainSwitch() {
   // 928-929    = 4
   // 699-700    = 5
 
-  if (sensorValue > 30 && sensorValue < 600) { return 1; }
-  else if (sensorValue > 680 && sensorValue < 720) { return 5; }
-  else if (sensorValue > 900 && sensorValue < 950) { return 4; }
-  else if (sensorValue > 960 && sensorValue < 995) { return 3; }
-  else if (sensorValue > 995 && sensorValue < 1020) { return 2; }
+  if (sensorValue > 30 && sensorValue < 600) { return 0; }
+  else if (sensorValue > 680 && sensorValue < 720) { return 4; }
+  else if (sensorValue > 900 && sensorValue < 950) { return 3; }
+  else if (sensorValue > 960 && sensorValue < 995) { return 2; }
+  else if (sensorValue > 995 && sensorValue < 1020) { return 1; }
 
   return currentScreen;
 }
