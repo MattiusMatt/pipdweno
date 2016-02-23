@@ -150,15 +150,40 @@ void loop() {
 // Sub Screen
 uint16_t menuColours[3] = { 2016, 800, 416 };
 String subScreens[8];
+int noOfSubScreens;
 
 void initSubScreens() {
   subScreens[0] = "STATUS";
   subScreens[1] = "SPECIAL";
   subScreens[2] = "PERKS";
+
+  noOfSubScreens = 3;
+}
+
+void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
+  uint8_t currentScreenText = 0;
+  
+  while (pip.available()) {
+    int character = pip.read();
+    
+    if (character == 13) {
+      pip.read(); // Om nom nom
+      return;
+    }
+
+    if (character == 124) {
+      character = pip.read();
+      currentScreenText++;
+    }
+
+    subScreens[currentScreenText].concat(char(character));
+  }
+
+  noOfSubScreens = currentScreenText + 1;
 }
 
 void drawSubScreen(int current) {
-  if (current < 0 || current > 7) { return; }
+  if (current < 0 || (current > noOfSubScreens - 1)) { return; }
 
   Serial.print("Loading Sub Screen: ");
   Serial.println(current);
@@ -293,6 +318,10 @@ void loadPip(char *screen, bool blankScreen) {
         case 4:
           renderPipRect(pip, x, y, true);
           break;
+
+        // Sub Screens
+        case 5:
+          loadSubScreens(pip, x, y);
       }
     }
     
