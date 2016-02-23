@@ -79,7 +79,7 @@ bool writePipMode = false;
 int currentScreen = 0;
 
 // Second Screen Vars
-long currentSubScreen  = -1;
+long currentSubScreen  = 0;
 
 void loop() {
   // Main Screen
@@ -112,13 +112,18 @@ void loop() {
         break;
     }
     
-    currentScreen = newScreen;  
+    currentScreen = newScreen;
+    drawSubScreen(currentSubScreen);
   }
 
   // Sub Screen
   long newSubScreen = encoder.read() / 2;
 
   if (newSubScreen != currentSubScreen) {
+    delay(500);
+
+    newSubScreen = encoder.read() / 2;
+    
     currentSubScreen = newSubScreen;
     Serial.println(currentSubScreen);
     drawSubScreen(currentSubScreen);
@@ -151,11 +156,25 @@ void loop() {
 uint16_t menuColours[3] = { 2016, 800, 416 };
 String subScreens[8];
 int noOfSubScreens;
+uint16_t subscreen_x;
+uint16_t subscreen_y;
 
 void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
   uint8_t currentScreenText = 0;
 
+  subscreen_x = x;
+  subscreen_y = y;
+
   Serial.println("Loading Sub Screens...");
+
+  subScreens[0] = "";
+  subScreens[1] = "";
+  subScreens[2] = "";
+  subScreens[3] = "";
+  subScreens[4] = "";
+  subScreens[5] = "";
+  subScreens[6] = "";
+  subScreens[7] = "";
   
   while (pip.available()) {
     int character = pip.read();
@@ -190,7 +209,7 @@ void drawSubScreen(int current) {
   Serial.println(current);
   
   tft.setTextSize(1);
-  tft.setCursor(45, 25);
+  tft.setCursor(subscreen_x, subscreen_y);
   tft.fillRect(0, 25, 320, 10, ILI9340_BLACK);
 
   for (uint8_t i = current; i < current + 3; i++) {
