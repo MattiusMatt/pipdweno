@@ -79,7 +79,7 @@ bool writePipMode = false;
 int currentScreen = 0;
 
 // Second Screen Vars
-long oldPosition  = -999;
+long currentSubScreen  = -1;
 
 void loop() {
   // Main Screen
@@ -92,28 +92,23 @@ void loop() {
     
     switch(newScreen){
       case 1:
-        //loadScreen(0);
-        loadPip("0.pip");
+        loadPip("0.pip", true);
         break;
         
       case 2:
-        //loadScreen(1);
-        loadPip("1.pip");
+        loadPip("1.pip", true);
         break;
         
       case 3:
-        //loadScreen(2);
-        loadPip("2.pip");
+        loadPip("2.pip", true);
         break;
         
       case 4:
-        //loadScreen(3);
-        loadPip("3.pip");
+        loadPip("3.pip", true);
         break;
         
       case 5:
-        //loadScreen(4);
-        loadPip("4.pip");
+        loadPip("4.pip", true);
         break;
     }
     
@@ -121,12 +116,12 @@ void loop() {
   }
 
   // Sub Screen
-  long newPosition = encoder.read() / 2;
+  long newSubScreen = encoder.read() / 2;
 
-  if (newPosition != oldPosition) {
-    oldPosition = newPosition;
-    Serial.println(newPosition);
-    drawSubScreen(newPosition);
+  if (newSubScreen != currentSubScreen) {
+    currentSubScreen = newSubScreen;
+    Serial.println(currentSubScreen);
+    drawSubScreen(currentSubScreen);
   }
   
   // Serial control
@@ -134,7 +129,7 @@ void loop() {
     writePipMode = !writePip(true);
     
     if (!writePipMode) {
-      loadPip("t.pip");
+      loadPip("t.pip", true);
     }
   } else {
     if (Serial.available()) {
@@ -162,7 +157,7 @@ void initSubScreens() {
   subScreens[2] = "PERKS";
 }
 
-void drawSubScreen(uint8_t current) {
+void drawSubScreen(int current) {
   if (current < 0 || current > 7) { return; }
 
   Serial.print("Loading Sub Screen: ");
@@ -180,6 +175,18 @@ void drawSubScreen(uint8_t current) {
   }
 
   tft.fillRect(0, 35, 320, 185, ILI9340_BLACK);
+
+  String subScreen = "";
+  subScreen.concat(currentScreen - 1);
+  subScreen.concat("-");
+  subScreen.concat(current);
+  subScreen.concat(".pip");
+
+  int len = subScreen.length() + 1;
+  char subScreenName[len];
+  subScreen.toCharArray(subScreenName, len);
+  
+  loadPip(subScreenName, false);
 }
 
 //Sound
@@ -237,7 +244,7 @@ bool writePip(bool appendMode) {
   return data == 11;
 }
 
-void loadPip(char *screen) {
+void loadPip(char *screen, bool blankScreen) {
   File pip = SD.open(screen);
 
   Serial.println();
@@ -245,7 +252,9 @@ void loadPip(char *screen) {
   Serial.print(screen);
   
   if (pip) {
-    tft.fillScreen(ILI9340_BLACK);
+    if (blankScreen) {
+      tft.fillScreen(ILI9340_BLACK);
+    }
 
     while (pip.available()) {
       uint8_t type = pip.read();
