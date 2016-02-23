@@ -152,34 +152,35 @@ uint16_t menuColours[3] = { 2016, 800, 416 };
 String subScreens[8];
 int noOfSubScreens;
 
-void initSubScreens() {
-  subScreens[0] = "STATUS";
-  subScreens[1] = "SPECIAL";
-  subScreens[2] = "PERKS";
-
-  noOfSubScreens = 3;
-}
-
 void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
   uint8_t currentScreenText = 0;
+
+  Serial.println("Loading Sub Screens...");
   
   while (pip.available()) {
     int character = pip.read();
     
     if (character == 13) {
       pip.read(); // Om nom nom
-      return;
+      break;
     }
 
     if (character == 124) {
       character = pip.read();
       currentScreenText++;
+      Serial.println();
     }
 
     subScreens[currentScreenText].concat(char(character));
+
+    Serial.print(char(character));
   }
 
   noOfSubScreens = currentScreenText + 1;
+
+  Serial.println();
+  Serial.print("No of Sub Screens: ");
+  Serial.println(noOfSubScreens);
 }
 
 void drawSubScreen(int current) {
@@ -269,7 +270,7 @@ bool writePip(bool appendMode) {
   return data == 11;
 }
 
-void loadPip(char *screen, bool blankScreen) {
+void loadPip(char *screen, bool mainScreen) {
   File pip = SD.open(screen);
 
   Serial.println();
@@ -277,7 +278,10 @@ void loadPip(char *screen, bool blankScreen) {
   Serial.print(screen);
   
   if (pip) {
-    if (blankScreen) {
+    if (mainScreen) {
+      // Reset Sub Screens
+      noOfSubScreens = 0;
+
       tft.fillScreen(ILI9340_BLACK);
     }
 
@@ -326,8 +330,6 @@ void loadPip(char *screen, bool blankScreen) {
     }
     
     pip.close();
-
-    initSubScreens();
   }
 }
 
