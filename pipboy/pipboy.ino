@@ -34,6 +34,11 @@
 // Audio Pin
 #define AUDIO_TMR 11
 
+// PIP Colours
+#define PIP_GREEN 2016
+#define PIP_GREEN_2 800
+#define PIP_GREEN_3 416
+
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
@@ -100,6 +105,9 @@ long currentSubScreen = 0;
 int previousButtonValue = 1;
 bool menuMode = false;
 
+// Current Menu Option
+long currentMenuOption = 0;
+
 void loop() {
   // Main Screen
   int newScreen = readMainSwitch();
@@ -137,27 +145,10 @@ void loop() {
     currentSubScreen = 0;
     encoder.write(0);
     drawSubScreen(currentSubScreen);
-  }
 
-  // Sub Screen
-  if (!menuMode) {
-    long newSubScreen = encoder.read() / 2;
-  
-    if (newSubScreen != currentSubScreen) {
-      delay(500);
-  
-      newSubScreen = encoder.read() / 2;
-  
-      Serial.println();
-      Serial.print("New Encoder Value: ");
-      Serial.println(newSubScreen);
-      
-      if (drawSubScreen(newSubScreen)) {
-        currentSubScreen = newSubScreen;
-      } else {
-        encoder.write(currentSubScreen * 2);
-      }
-    }
+    // Reset Menu Option
+    currentMenuOption = 0;
+    menuMode = false;
   }
 
   // Menu Mode Toggle
@@ -170,6 +161,13 @@ void loop() {
     if (val == LOW) {
       menuMode = !menuMode;
 
+      if (!menuMode) {
+        encoder.write(currentSubScreen);
+      } else {
+        currentMenuOption = 0;
+        encoder.write(currentMenuOption);
+      }
+
       encoder.write(0);
 
       Serial.print("Menu Mode: ");
@@ -177,6 +175,48 @@ void loop() {
     }
 
     previousButtonValue = val;
+  }
+
+  // Sub Screen
+  long newEncoderValue = encoder.read() / 2;
+
+  if (!menuMode && newEncoderValue != currentSubScreen) {
+    delay(500);
+
+    newEncoderValue = encoder.read() / 2;
+
+    Serial.println();
+    Serial.print("New Encoder Value: ");
+    Serial.println(newEncoderValue);
+
+    if (drawSubScreen(newEncoderValue)) {
+      currentSubScreen = newEncoderValue;
+    } else {
+      encoder.write(currentSubScreen * 2);
+    }
+
+    // TEMP
+    if (currentSubScreen == 1) {
+      loadMenuOptions();
+      drawMenuOptions(0);
+    }
+  }
+
+  // Menu
+  if (menuMode && newEncoderValue != currentMenuOption) {
+    delay(500);
+
+    newEncoderValue = encoder.read() / 2;
+
+    Serial.println();
+    Serial.print("New Encoder Value: ");
+    Serial.println(newEncoderValue);
+    
+    if (updateMenuOptions(newEncoderValue, currentMenuOption)) {
+      currentMenuOption = newEncoderValue;
+    } else {
+      encoder.write(currentMenuOption * 2);
+    }
   }
   
   // Serial control
@@ -204,6 +244,10 @@ void loop() {
 
 // Menu Screen
 #define MAX_MENU_OPTIONS 20
+#define MENU_ITEM_HEIGHT 20
+#define MENU_ITEM_WIDTH 140
+#define MENU_START_X 20
+#define MENU_START_Y 55
 
 String menuOptions[MAX_MENU_OPTIONS];
 int noOfMenuOptions;
@@ -214,18 +258,60 @@ void loadMenuOptions() {
   }
   
   menuOptions[0] = "Option One";
-  menuOptions[0] = "Option Two";
-  menuOptions[0] = "Option Three";
-  menuOptions[0] = "Option Four";
-  menuOptions[0] = "Option Five";
+  menuOptions[1] = "Option Two";
+  menuOptions[2] = "Option Three";
+  menuOptions[3] = "Option Four";
+  menuOptions[4] = "Option Five";
 
   noOfMenuOptions = 5;
+}
+
+void drawMenuOptions(int current) {
+  int menu_x = MENU_START_X;
+  int menu_y = MENU_START_Y;
+  
+  tft.setTextSize(1);
+
+  for (uint8_t i = 0; i < noOfMenuOptions; i++) {
+    if (i == current) {
+      tft.fillRect(menu_x - 5, menu_y - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, PIP_GREEN);
+      tft.setTextColor(ILI9340_BLACK, PIP_GREEN);
+    } else {
+      tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+    }
+    
+    tft.setCursor(menu_x, menu_y);
+    tft.print(menuOptions[i]);
+
+    menu_y += MENU_ITEM_HEIGHT;
+  }
+}
+
+bool updateMenuOptions(int newMenu, int previousMenu) {
+  if (newMenu < 0 || (newMenu > noOfMenuOptions - 1)) { return false; }
+  
+  int menu_y_new = MENU_START_Y + (MENU_ITEM_HEIGHT * newMenu);
+  int menu_y_old = MENU_START_Y + (MENU_ITEM_HEIGHT * previousMenu);
+  
+  // Overwrite old menu item
+  tft.fillRect(MENU_START_X - 5, menu_y_old - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, ILI9340_BLACK);
+  tft.setTextColor(PIP_GREEN);
+  tft.setCursor(MENU_START_X, menu_y_old);
+  tft.print(menuOptions[previousMenu]);
+
+  // Overwrite new menu item
+  tft.fillRect(MENU_START_X - 5, menu_y_new - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, PIP_GREEN);
+  tft.setTextColor(ILI9340_BLACK);
+  tft.setCursor(MENU_START_X, menu_y_new);
+  tft.print(menuOptions[newMenu]);
+
+  return true;
 }
 
 // Sub Screen
 #define MAX_SUB_SCREENS 8
 
-uint16_t menuColours[3] = { 2016, 800, 416 };
+uint16_t menuColours[3] = { PIP_GREEN, PIP_GREEN_2, PIP_GREEN_3 };
 String subScreens[MAX_SUB_SCREENS];
 int noOfSubScreens;
 uint16_t subscreen_x;
