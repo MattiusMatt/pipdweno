@@ -191,14 +191,9 @@ void loop() {
     if (drawSubScreen(newEncoderValue)) {
       currentSubScreen = newEncoderValue;
       currentMenuOption = 0;
+      renderSubMenu(currentMenuOption);
     } else {
       encoder.write(currentSubScreen * 2);
-    }
-
-    // TEMP
-    if (currentSubScreen == 1) {
-      loadMenuOptions();
-      drawMenuOptions(0);
     }
   }
 
@@ -214,6 +209,7 @@ void loop() {
     
     if (updateMenuOptions(newEncoderValue, currentMenuOption)) {
       currentMenuOption = newEncoderValue;
+      renderSubMenu(currentMenuOption);
     } else {
       encoder.write(currentMenuOption * 2);
     }
@@ -246,7 +242,7 @@ void loop() {
 #define MAX_MENU_OPTIONS 20
 #define MAX_MENU_DISPLAY 8
 #define MENU_ITEM_HEIGHT 20
-#define MENU_ITEM_WIDTH 140
+#define MENU_ITEM_WIDTH 130
 #define MENU_START_X 20
 #define MENU_START_Y 55
 
@@ -254,26 +250,44 @@ String menuOptions[MAX_MENU_OPTIONS];
 int noOfMenuOptions;
 int menuOffset = 0;
 
-void loadMenuOptions() {
+void loadMenuOptions(File &pip, uint16_t x, uint16_t y) {
+  uint8_t currentMenuText = 0;
+  
+  Serial.println("Loading Sub Menus...");
+
   for (int i = 0; i < MAX_MENU_OPTIONS; i++) {
     menuOptions[i] = "";
   }
   
-  menuOptions[0] = "Option One";
-  menuOptions[1] = "Option Two";
-  menuOptions[2] = "Option Three";
-  menuOptions[3] = "Option Four";
-  menuOptions[4] = "Option Five";
-  menuOptions[5] = "Option Six";
-  menuOptions[6] = "Option Seven";
-  menuOptions[7] = "Option Eight";
-  menuOptions[8] = "Option Nine";
-  menuOptions[9] = "Option Ten";
+  while (pip.available()) {
+    int character = pip.read();
+    
+    if (character == ASCII_CR) {
+      pip.read(); // Om nom nom
+      break;
+    }
 
-  noOfMenuOptions = 10;
+    if (character == ASCII_PIPE) {
+      character = pip.read();
+      currentMenuText++;
+      Serial.println();
+    }
+
+    menuOptions[currentMenuText].concat(char(character));
+
+    Serial.print(char(character));
+  }
+
+  noOfMenuOptions = currentMenuText + 1;
+
+  Serial.println();
+  Serial.print("No of Menu Options: ");
+  Serial.println(noOfMenuOptions);
 }
 
 void drawMenuOptions(int current) {
+  if (noOfMenuOptions == 0) { return; }
+  
   int menu_x = MENU_START_X;
   int menu_y = MENU_START_Y;
   
@@ -340,6 +354,24 @@ bool updateMenuOptions(int newMenu, int previousMenu) {
   tft.print(menuOptions[newMenu]);
 
   return true;
+}
+
+void renderSubMenu(int current) {
+  tft.fillRect(160, 35, 159, 190, ILI9340_BLACK);
+  
+  String subMenu = "";
+  subMenu.concat(currentScreen);
+  subMenu.concat("-");
+  subMenu.concat(currentSubScreen);
+  subMenu.concat("-");
+  subMenu.concat(current);
+  subMenu.concat(".pip");
+
+  int len = subMenu.length() + 1;
+  char subMenuName[len];
+  subMenu.toCharArray(subMenuName, len);
+  
+  loadPip(subMenuName, false);
 }
 
 // Sub Screen
@@ -534,6 +566,13 @@ void loadPip(char *screen, bool mainScreen) {
         // Sub Screens
         case 5:
           loadSubScreens(pip, x, y);
+          break;
+
+        // Sub Menus
+        case 6:
+          loadMenuOptions(pip, x, y);
+          drawMenuOptions(0);
+          break;
       }
     }
     
