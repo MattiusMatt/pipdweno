@@ -162,13 +162,13 @@ void loop() {
       menuMode = !menuMode;
 
       if (!menuMode) {
-        encoder.write(currentSubScreen);
+        Serial.print("Flange: ");
+        Serial.println(currentSubScreen);
+        encoder.write(currentSubScreen * 2);
       } else {
         currentMenuOption = 0;
-        encoder.write(currentMenuOption);
+        encoder.write(currentMenuOption * 2);
       }
-
-      encoder.write(0);
 
       Serial.print("Menu Mode: ");
       Serial.println(menuMode);
@@ -244,6 +244,7 @@ void loop() {
 
 // Menu Screen
 #define MAX_MENU_OPTIONS 20
+#define MAX_MENU_DISPLAY 8
 #define MENU_ITEM_HEIGHT 20
 #define MENU_ITEM_WIDTH 140
 #define MENU_START_X 20
@@ -251,6 +252,7 @@ void loop() {
 
 String menuOptions[MAX_MENU_OPTIONS];
 int noOfMenuOptions;
+int menuOffset = 0;
 
 void loadMenuOptions() {
   for (int i = 0; i < MAX_MENU_OPTIONS; i++) {
@@ -262,8 +264,13 @@ void loadMenuOptions() {
   menuOptions[2] = "Option Three";
   menuOptions[3] = "Option Four";
   menuOptions[4] = "Option Five";
+  menuOptions[5] = "Option Six";
+  menuOptions[6] = "Option Seven";
+  menuOptions[7] = "Option Eight";
+  menuOptions[8] = "Option Nine";
+  menuOptions[9] = "Option Ten";
 
-  noOfMenuOptions = 5;
+  noOfMenuOptions = 10;
 }
 
 void drawMenuOptions(int current) {
@@ -272,11 +279,20 @@ void drawMenuOptions(int current) {
   
   tft.setTextSize(1);
 
-  for (uint8_t i = 0; i < noOfMenuOptions; i++) {
+  int renderItems;
+
+  if (noOfMenuOptions < MAX_MENU_DISPLAY) {
+    renderItems = noOfMenuOptions;
+  } else {
+    renderItems = MAX_MENU_DISPLAY;
+  }
+
+  for (uint8_t i = menuOffset; i < renderItems + menuOffset; i++) {
     if (i == current) {
       tft.fillRect(menu_x - 5, menu_y - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, PIP_GREEN);
       tft.setTextColor(ILI9340_BLACK, PIP_GREEN);
     } else {
+      tft.fillRect(menu_x - 5, menu_y - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, ILI9340_BLACK);
       tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
     }
     
@@ -289,7 +305,23 @@ void drawMenuOptions(int current) {
 
 bool updateMenuOptions(int newMenu, int previousMenu) {
   if (newMenu < 0 || (newMenu > noOfMenuOptions - 1)) { return false; }
+
+  if (newMenu > (MAX_MENU_DISPLAY - 1) || previousMenu > (MAX_MENU_DISPLAY - 1)) {
+    menuOffset = newMenu - (MAX_MENU_DISPLAY - 1);
+
+    Serial.print("New: ");
+    Serial.println(newMenu);
+    
+    Serial.print("Menu Offset: ");
+    Serial.println(menuOffset);
+
+    drawMenuOptions(newMenu);
   
+    return true;
+  } else {
+    menuOffset = 0;
+  }
+
   int menu_y_new = MENU_START_Y + (MENU_ITEM_HEIGHT * newMenu);
   int menu_y_old = MENU_START_Y + (MENU_ITEM_HEIGHT * previousMenu);
   
