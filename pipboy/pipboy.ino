@@ -166,7 +166,6 @@ void loop() {
         Serial.println(currentSubScreen);
         encoder.write(currentSubScreen * 2);
       } else {
-        currentMenuOption = 0;
         encoder.write(currentMenuOption * 2);
       }
 
@@ -191,6 +190,7 @@ void loop() {
 
     if (drawSubScreen(newEncoderValue)) {
       currentSubScreen = newEncoderValue;
+      currentMenuOption = 0;
     } else {
       encoder.write(currentSubScreen * 2);
     }
@@ -323,22 +323,6 @@ bool updateMenuOptions(int newMenu, int previousMenu) {
   
     return true;
   }
-
-  /*if (newMenu > (MAX_MENU_DISPLAY - 1) || previousMenu > (MAX_MENU_DISPLAY - 1)) {
-    menuOffset = newMenu - (MAX_MENU_DISPLAY - 1);
-
-    Serial.print("New: ");
-    Serial.println(newMenu);
-    
-    Serial.print("Menu Offset: ");
-    Serial.println(menuOffset);
-
-    drawMenuOptions(newMenu);
-  
-    return true;
-  } else {
-    menuOffset = 0;
-  }*/
 
   int menu_y_new = MENU_START_Y + (MENU_ITEM_HEIGHT * newMenu);
   int menu_y_old = MENU_START_Y + (MENU_ITEM_HEIGHT * previousMenu);
