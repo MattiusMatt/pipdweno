@@ -306,7 +306,25 @@ void drawMenuOptions(int current) {
 bool updateMenuOptions(int newMenu, int previousMenu) {
   if (newMenu < 0 || (newMenu > noOfMenuOptions - 1)) { return false; }
 
-  if (newMenu > (MAX_MENU_DISPLAY - 1) || previousMenu > (MAX_MENU_DISPLAY - 1)) {
+  int newMenuOffset = newMenu - (MAX_MENU_DISPLAY - 1);
+
+  if (newMenuOffset < 0) { newMenuOffset = 0; }
+
+  if (newMenuOffset != menuOffset) {
+    menuOffset = newMenuOffset;
+    
+    Serial.print("New: ");
+    Serial.println(newMenu);
+    
+    Serial.print("Menu Offset: ");
+    Serial.println(menuOffset);
+
+    drawMenuOptions(newMenu);
+  
+    return true;
+  }
+
+  /*if (newMenu > (MAX_MENU_DISPLAY - 1) || previousMenu > (MAX_MENU_DISPLAY - 1)) {
     menuOffset = newMenu - (MAX_MENU_DISPLAY - 1);
 
     Serial.print("New: ");
@@ -320,7 +338,7 @@ bool updateMenuOptions(int newMenu, int previousMenu) {
     return true;
   } else {
     menuOffset = 0;
-  }
+  }*/
 
   int menu_y_new = MENU_START_Y + (MENU_ITEM_HEIGHT * newMenu);
   int menu_y_old = MENU_START_Y + (MENU_ITEM_HEIGHT * previousMenu);
