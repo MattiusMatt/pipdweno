@@ -13,6 +13,10 @@
     #define F(string_literal) string_literal
 #endif
 
+// ASCII Consts
+#define ASCII_CR 13
+#define ASCII_PIPE 124
+
 // TFT Pins
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
 #define TFT_RST 8
@@ -22,11 +26,19 @@
 // SD Pin
 #define SD_CS 4
 
-// tft variable for writing to the screen
+// Rotary Encoder
+#define ENCODER_BUTTON 19
+#define ENCODER_A 20
+#define ENCODER_B 21
+
+// Audio Pin
+#define AUDIO_TMR 11
+
+// TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
-// Rotary Encoder
-Encoder encoder(20, 21);
+// Encoder
+Encoder encoder(ENCODER_A, ENCODER_B);
 
 // Sound
 TMRpcm audio;
@@ -45,8 +57,11 @@ void setup() {
   Serial.println("OK!");
 
   // Sound
-  audio.speakerPin = 11;
+  audio.speakerPin = AUDIO_TMR;
   audio.setVolume(5);
+
+  // Encoder Button
+  pinMode(ENCODER_BUTTON, INPUT_PULLUP);
   
   // TFT
   tft.begin();
@@ -80,6 +95,10 @@ int currentScreen = -1;
 
 // Second Screen Vars
 long currentSubScreen = 0;
+
+// Encoder Mode
+int previousButtonValue = 1;
+bool menuMode = false;
 
 void loop() {
   // Main Screen
@@ -121,22 +140,43 @@ void loop() {
   }
 
   // Sub Screen
-  long newSubScreen = encoder.read() / 2;
-
-  if (newSubScreen != currentSubScreen) {
-    delay(500);
-
-    newSubScreen = encoder.read() / 2;
-
-    Serial.println();
-    Serial.print("New Encoder Value: ");
-    Serial.println(newSubScreen);
-    
-    if (drawSubScreen(newSubScreen)) {
-      currentSubScreen = newSubScreen;
-    } else {
-      encoder.write(currentSubScreen * 2);
+  if (!menuMode) {
+    long newSubScreen = encoder.read() / 2;
+  
+    if (newSubScreen != currentSubScreen) {
+      delay(500);
+  
+      newSubScreen = encoder.read() / 2;
+  
+      Serial.println();
+      Serial.print("New Encoder Value: ");
+      Serial.println(newSubScreen);
+      
+      if (drawSubScreen(newSubScreen)) {
+        currentSubScreen = newSubScreen;
+      } else {
+        encoder.write(currentSubScreen * 2);
+      }
     }
+  }
+
+  // Menu Mode Toggle
+  int val = digitalRead(ENCODER_BUTTON);
+
+  if (val != previousButtonValue) {
+    delay(10);
+    val = digitalRead(ENCODER_BUTTON);
+    
+    if (val == LOW) {
+      menuMode = !menuMode;
+
+      encoder.write(0);
+
+      Serial.print("Menu Mode: ");
+      Serial.println(menuMode);
+    }
+
+    previousButtonValue = val;
   }
   
   // Serial control
@@ -162,9 +202,31 @@ void loop() {
 
 // Helper functions
 
+// Menu Screen
+#define MAX_MENU_OPTIONS 20
+
+String menuOptions[MAX_MENU_OPTIONS];
+int noOfMenuOptions;
+
+void loadMenuOptions() {
+  for (int i = 0; i < MAX_MENU_OPTIONS; i++) {
+    menuOptions[i] = "";
+  }
+  
+  menuOptions[0] = "Option One";
+  menuOptions[0] = "Option Two";
+  menuOptions[0] = "Option Three";
+  menuOptions[0] = "Option Four";
+  menuOptions[0] = "Option Five";
+
+  noOfMenuOptions = 5;
+}
+
 // Sub Screen
+#define MAX_SUB_SCREENS 8
+
 uint16_t menuColours[3] = { 2016, 800, 416 };
-String subScreens[8];
+String subScreens[MAX_SUB_SCREENS];
 int noOfSubScreens;
 uint16_t subscreen_x;
 uint16_t subscreen_y;
@@ -177,24 +239,19 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
 
   Serial.println("Loading Sub Screens...");
 
-  subScreens[0] = "";
-  subScreens[1] = "";
-  subScreens[2] = "";
-  subScreens[3] = "";
-  subScreens[4] = "";
-  subScreens[5] = "";
-  subScreens[6] = "";
-  subScreens[7] = "";
+  for (int i = 0; i < MAX_SUB_SCREENS; i++) {
+    subScreens[i] = "";
+  }
   
   while (pip.available()) {
     int character = pip.read();
     
-    if (character == 13) {
+    if (character == ASCII_CR) {
       pip.read(); // Om nom nom
       break;
     }
 
-    if (character == 124) {
+    if (character == ASCII_PIPE) {
       character = pip.read();
       currentScreenText++;
       Serial.println();
@@ -411,7 +468,7 @@ void renderPipImage(File &pip, uint16_t x, uint16_t y) {
   while (pip.available()) {
     uint8_t character = pip.read();
 
-    if (character == 13) {
+    if (character == ASCII_CR) {
       pip.read(); // Om nom nom
       break;
     }
@@ -456,7 +513,7 @@ void renderPipText(File &pip, uint16_t x, uint16_t y) {
   while (pip.available()) {
     uint8_t character = pip.read();
     
-    if (character == 13) {
+    if (character == ASCII_CR) {
       pip.read(); // Om nom nom
       return;
     }
@@ -464,30 +521,8 @@ void renderPipText(File &pip, uint16_t x, uint16_t y) {
     Serial.print(char(character));
     tft.print(char(character));
   }
-}
 
-void loadScreen(uint16_t screen) {
-  switch (screen) {
-    case 0:
-      bmpDraw("0.bmp", 0, 0);
-      break;
-
-    case 1:
-      bmpDraw("1.bmp", 0, 0);
-      break;
-
-    case 2:
-      bmpDraw("2.bmp", 0, 0);
-      break;
-
-    case 3:
-      bmpDraw("3.bmp", 0, 0);
-      break;
-
-    case 4:
-      bmpDraw("4.bmp", 0, 0);
-      break;
-  }
+  Serial.println();
 }
 
 void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
