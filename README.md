@@ -57,8 +57,41 @@ That was way too boring and easy as someone had done all of the work for me!!! A
 ## Rubbish Video Diary
 [Pipdweno Video Diary](https://www.youtube.com/playlist?list=PL0KxT4IdSigvEKm1h8vPCSg0aH92uugvp "Pipdweno!")
 ## The hardware
-ToDo, write stuff about Hardware...
+[Arduino Uno (replaced with mega)](https://www.arduino.cc/en/Main/ArduinoBoardUno "Arduino Uno")
+
+[Arduino Mega](https://www.arduino.cc/en/Main/ArduinoBoardMega2560 "Arduino Mega")
+
+[AdaFruit TFT](https://www.adafruit.com/products/1480 "TFT")
+
+[AdaFruit GPS](https://www.adafruit.com/products/746 "GPS")
+
+[AdaFruit Sound](https://www.adafruit.com/product/2130 "Sound")
+
+[AdaFruit Speaker](https://www.adafruit.com/products/1890 "Speaker")
+
+[Knob (5 Position Rotary Switch)](http://www.amazon.co.uk/gp/product/B00DUYQJWQ?psc=1&redirect=true&ref_=oh_aui_detailpage_o05_s00 "Rotary Switch")
+
+[Deadpool Badge (nothing to do with the project... but how cool)](http://www.amazon.co.uk/gp/product/B00K3O1VFQ?psc=1&redirect=true&ref_=oh_aui_detailpage_o08_s00 "Badge")
+
+[Green LED Buttons](http://www.amazon.co.uk/gp/product/B0094GWD9W?psc=1&redirect=true&ref_=oh_aui_detailpage_o08_s00 "LED Button")
+
+[Power Switch](http://www.amazon.co.uk/gp/product/B00HGAKDIQ?psc=1&redirect=true&ref_=oh_aui_detailpage_o08_s00 "Power Switch")
+
+[Twisty Pushy Thing (Rotary Encoder)](http://www.amazon.co.uk/gp/product/B011AVHSYS?psc=1&redirect=true&ref_=oh_aui_detailpage_o06_s00 "Rotary Encoder")
+
+[FM Radio](https://www.sparkfun.com/products/11083 "Radio")
+
+WiFi or GSM Module to download Maps (Undecided as yet)
 ## The Software
 ToDo, write stuff about Software...
 ## Wiring
 ToDo, you get the idea...
+## The PIP Editor
+You may or may not know that Arduino's dont have that much memory (although I have more since upgrading my Uno to a Mega... but anyway), so I decided all my text, images and screen layouts should be loaded from an SD card. Which was handy as the AdaFruit TFT Breakout I'm using comes with a MicroSD reader (got to love AdaFruit!!!). Hmmmm what shall I call the layout files.... errr... .pip files.... How creative of me! Well making layout changes using a HEX addon for notepad++ and then copying the .pip files to a MicroSD to then try out on the Arduino only to find out I was still a few pixels out got old very quickly... Hence the PipEditor was born!
+
+[PipEditor](https://github.com/MattiusMatt/pipeditor "PipEditor!")
+##Original Inspiration
+This is the project that inspired me in the first place! The page has links to the RasPipBoy Python project and AdaFruit TFT. I've since contacted "Hazy Vagrant" and hope to be working with him to build something that will take all of my electronics components! Although its a big ask!!
+
+
+[RasPipBoy](https://www.etsy.com/listing/237060437/3d-printed-piboy-3000-mark-iv-raspberry?ref=pr_shop "RasPipBoy")
