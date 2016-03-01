@@ -6,6 +6,8 @@
 #include <SD.h>
 #include <TMRpcm.h>
 #include <Encoder.h>
+#include <Si4703_Breakout.h>
+#include <Wire.h>
 
 // Comment here when I know what this is for??
 #if defined(__SAM3X8E__)
@@ -16,6 +18,7 @@
 // ASCII Consts
 #define ASCII_CR 13
 #define ASCII_PIPE 124
+#define ASCII_TILDE 126
 
 // TFT Pins
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
@@ -27,12 +30,17 @@
 #define SD_CS 4
 
 // Rotary Encoder
-#define ENCODER_BUTTON 19
-#define ENCODER_A 20
-#define ENCODER_B 21
+#define ENCODER_BUTTON 17
+#define ENCODER_A 18
+#define ENCODER_B 19
 
 // Audio Pin
 #define AUDIO_TMR 11
+
+// Radio Pins
+#define RADIO_RST 5
+int RADIO_SDIO = 20;
+int RADIO_SCLK = 21;
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -41,6 +49,11 @@
 
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
+
+// Radio
+#define RADIO_MAXVOL 15
+Si4703_Breakout radio(RADIO_RST, RADIO_SDIO, RADIO_SCLK);
+int radioVolume = 10;
 
 // Encoder
 Encoder encoder(ENCODER_A, ENCODER_B);
@@ -64,6 +77,10 @@ void setup() {
   // Sound
   audio.speakerPin = AUDIO_TMR;
   audio.setVolume(5);
+
+  // Radio
+  radio.powerOn();
+  radio.setVolume(0);
 
   // Encoder Button
   pinMode(ENCODER_BUTTON, INPUT_PULLUP);
@@ -116,6 +133,8 @@ void loop() {
     delay(500);
 
     newScreen = readMainSwitch();
+
+    radio.setVolume(0);
     
     switch(newScreen){
       case 0:
@@ -136,6 +155,10 @@ void loop() {
         
       case 4:
         loadPip("4.pip", true);
+
+        // Radio
+        radio.setVolume(radioVolume);
+        
         break;
     }
     
@@ -247,6 +270,7 @@ void loop() {
 #define MENU_START_Y 55
 
 String menuOptions[MAX_MENU_OPTIONS];
+String menuOptionsData[MAX_MENU_OPTIONS];
 int noOfMenuOptions;
 int menuOffset = 0;
 
@@ -257,7 +281,11 @@ void loadMenuOptions(File &pip, uint16_t x, uint16_t y) {
 
   for (int i = 0; i < MAX_MENU_OPTIONS; i++) {
     menuOptions[i] = "";
+    menuOptionsData[i] = "";
   }
+
+  String data;
+  bool readData = false;
   
   while (pip.available()) {
     int character = pip.read();
@@ -267,13 +295,24 @@ void loadMenuOptions(File &pip, uint16_t x, uint16_t y) {
       break;
     }
 
+    if (character == ASCII_TILDE) {
+      character = pip.read();
+      readData = true;
+    }
+    
     if (character == ASCII_PIPE) {
       character = pip.read();
+      data = "";
+      readData = false;
       currentMenuText++;
       Serial.println();
     }
 
-    menuOptions[currentMenuText].concat(char(character));
+    if (!readData) {
+      menuOptions[currentMenuText].concat(char(character));
+    } else {
+      menuOptionsData[currentMenuText].concat(char(character));
+    }
 
     Serial.print(char(character));
   }
@@ -353,10 +392,27 @@ bool updateMenuOptions(int newMenu, int previousMenu) {
   tft.setCursor(MENU_START_X, menu_y_new);
   tft.print(menuOptions[newMenu]);
 
+  // Data
+  loadMenuData(newMenu);
+
   return true;
 }
 
+void loadMenuData(int current) {
+  // Only Radio at the moment
+  if (menuOptionsData[current] != "") {
+    int station = menuOptionsData[current].toInt();
+
+    Serial.print("New Station: ");
+    Serial.println(station);
+    
+    radio.setChannel(station);
+  }
+}
+
 void renderSubMenu(int current) {
+  if (noOfMenuOptions == 0) { return; }
+  
   tft.fillRect(160, 35, 159, 190, ILI9340_BLACK);
   
   String subMenu = "";
@@ -422,10 +478,28 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
 }
 
 bool drawSubScreen(int current) {
-  if (current < 0 || (current > noOfSubScreens - 1)) { return false; }
+  if (current < 0 || (current > noOfSubScreens - 1)) {
+    // Fall back on volume no sub screens
+    radioVolume += current;
+
+    if (radioVolume > RADIO_MAXVOL) {
+      radioVolume = RADIO_MAXVOL;
+    } else if (radioVolume < 0) {
+      radioVolume = 0;
+    }
+
+    Serial.print("Radio Volume: ");
+    Serial.println(radioVolume);
+
+    radio.setVolume(radioVolume);
+    
+    return false;
+  }
 
   Serial.print("Loading Sub Screen: ");
   Serial.println(current);
+
+  noOfMenuOptions = 0;
   
   tft.setTextSize(1);
   tft.setCursor(subscreen_x, subscreen_y);
@@ -469,17 +543,11 @@ int readMainSwitch() {
   int sensorValue = analogRead(A7);
 
   // Main Rotary Switch
-  // 0-2        = 1
-  // 1009-1010  = 2
-  // 974-975    = 3
-  // 928-929    = 4
-  // 699-700    = 5
-
-  if (sensorValue > 30 && sensorValue < 600) { return 0; }
-  else if (sensorValue > 680 && sensorValue < 720) { return 4; }
-  else if (sensorValue > 900 && sensorValue < 950) { return 3; }
-  else if (sensorValue > 960 && sensorValue < 995) { return 2; }
-  else if (sensorValue > 995 && sensorValue < 1020) { return 1; }
+  if (sensorValue > 200 && sensorValue < 220) { return 0; }
+  else if (sensorValue > 250 && sensorValue < 270) { return 1; }
+  else if (sensorValue > 340 && sensorValue < 360) { return 2; }
+  else if (sensorValue > 510 && sensorValue < 530) { return 3; }
+  else if (sensorValue > 1000 && sensorValue < 1050) { return 4; }
 
   return currentScreen;
 }
@@ -572,6 +640,7 @@ void loadPip(char *screen, bool mainScreen) {
         case 6:
           loadMenuOptions(pip, x, y);
           drawMenuOptions(0);
+          loadMenuData(0);
           break;
       }
     }
