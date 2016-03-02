@@ -124,6 +124,7 @@ bool menuMode = false;
 
 // Current Menu Option
 long currentMenuOption = 0;
+int menuOffset = 0;
 
 void loop() {
   // Main Screen
@@ -171,6 +172,7 @@ void loop() {
 
     // Reset Menu Option
     currentMenuOption = 0;
+    menuOffset = 0;
     menuMode = false;
   }
 
@@ -229,12 +231,14 @@ void loop() {
     Serial.println();
     Serial.print("New Encoder Value: ");
     Serial.println(newEncoderValue);
+
+    int newMenu = updateMenuOptions(newEncoderValue, currentMenuOption);
+
+    currentMenuOption = newMenu;
+    renderSubMenu(newMenu);
     
-    if (updateMenuOptions(newEncoderValue, currentMenuOption)) {
-      currentMenuOption = newEncoderValue;
-      renderSubMenu(currentMenuOption);
-    } else {
-      encoder.write(currentMenuOption * 2);
+    if (newMenu != newEncoderValue) {
+      encoder.write(newMenu * 2);
     }
   }
   
@@ -272,7 +276,6 @@ void loop() {
 String menuOptions[MAX_MENU_OPTIONS];
 String menuOptionsData[MAX_MENU_OPTIONS];
 int noOfMenuOptions;
-int menuOffset = 0;
 
 void loadMenuOptions(File &pip, uint16_t x, uint16_t y) {
   uint8_t currentMenuText = 0;
@@ -356,8 +359,11 @@ void drawMenuOptions(int current) {
   }
 }
 
-bool updateMenuOptions(int newMenu, int previousMenu) {
-  if (newMenu < 0 || (newMenu > noOfMenuOptions - 1)) { return false; }
+int updateMenuOptions(int newMenu, int previousMenu) {
+  if (newMenu < 0) { newMenu = 0; }
+  if (newMenu > noOfMenuOptions - 1) { newMenu = noOfMenuOptions - 1; }
+
+  if (newMenu == previousMenu) { return newMenu; }
 
   int newMenuOffset = newMenu - (MAX_MENU_DISPLAY - 1);
 
@@ -374,7 +380,7 @@ bool updateMenuOptions(int newMenu, int previousMenu) {
 
     drawMenuOptions(newMenu);
   
-    return true;
+    return newMenu;
   }
 
   int menu_y_new = MENU_START_Y + (MENU_ITEM_HEIGHT * newMenu);
@@ -395,7 +401,7 @@ bool updateMenuOptions(int newMenu, int previousMenu) {
   // Data
   loadMenuData(newMenu);
 
-  return true;
+  return newMenu;
 }
 
 void loadMenuData(int current) {
