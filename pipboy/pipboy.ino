@@ -168,7 +168,7 @@ void loop() {
     // Reset Sub Screen
     currentSubScreen = 0;
     encoder.write(0);
-    drawSubScreen(currentSubScreen);
+    drawSubScreen(currentSubScreen, true);
 
     // Reset Menu Option
     currentMenuOption = 0;
@@ -213,12 +213,14 @@ void loop() {
     Serial.print("New Encoder Value: ");
     Serial.println(newEncoderValue);
 
-    if (drawSubScreen(newEncoderValue)) {
-      currentSubScreen = newEncoderValue;
+    int newSubScreen = drawSubScreen(newEncoderValue, false);
+
+    if (newSubScreen != currentSubScreen) {
+      currentSubScreen = newSubScreen;
       currentMenuOption = 0;
       renderSubMenu(currentMenuOption);
     } else {
-      encoder.write(currentSubScreen * 2);
+      encoder.write(newSubScreen * 2);
     }
   }
 
@@ -483,8 +485,8 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
   Serial.println(noOfSubScreens);
 }
 
-bool drawSubScreen(int current) {
-  if (current < 0 || (current > noOfSubScreens - 1)) {
+int drawSubScreen(int current, bool force) {
+  if (currentScreen == 4) {
     // Fall back on volume no sub screens
     radioVolume += current;
 
@@ -499,7 +501,14 @@ bool drawSubScreen(int current) {
 
     radio.setVolume(radioVolume);
     
-    return false;
+    return currentSubScreen;
+  }
+
+  if (current < 0) { current = 0; }
+  if (current > noOfSubScreens - 1) { current = noOfSubScreens - 1; }
+  
+  if (!force && currentSubScreen == current) {
+    return current;
   }
 
   Serial.print("Loading Sub Screen: ");
@@ -532,7 +541,7 @@ bool drawSubScreen(int current) {
   
   loadPip(subScreenName, false);
 
-  return true;
+  return current;
 }
 
 //Sound
