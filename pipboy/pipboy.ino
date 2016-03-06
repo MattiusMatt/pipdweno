@@ -29,6 +29,9 @@
 // SD Pin
 #define SD_CS 4
 
+// GPS
+#define GPS_ECHO false
+
 // Rotary Encoder
 #define ENCODER_BUTTON 17
 #define ENCODER_A 18
@@ -49,6 +52,9 @@ int RADIO_SCLK = 21;
 
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
+
+// GPS
+Adafruit_GPS gps(&Serial3);
 
 // Radio
 #define RADIO_MAXVOL 15
@@ -77,6 +83,17 @@ void setup() {
   // Sound
   audio.speakerPin = AUDIO_TMR;
   audio.setVolume(5);
+
+  // GPS
+  gps.begin(9600);
+  gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  gps.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
+  gps.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
+  gps.sendCommand(PGCMD_ANTENNA);
+
+  // GPS Interupt
+  OCR0A = 0xAF;
+  TIMSK0 |= _BV(OCIE0A);
 
   // Radio
   radio.powerOn();
@@ -107,6 +124,18 @@ void setup() {
   delay(1000);
 
   //play("1.wav");
+}
+
+// GPS Interupt
+SIGNAL(TIMER0_COMPA_vect) {
+  char c = gps.read();
+  
+  if (GPS_ECHO)
+  {
+    if (c) { UDR0 = c; }
+    // writing direct to UDR0 is much much faster than Serial.print 
+    // but only one character can be written at a time. 
+  }
 }
 
 // Serial Vars
