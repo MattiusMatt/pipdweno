@@ -30,6 +30,7 @@
 #define SD_CS 4
 
 // GPS
+#define GPS_SCREEN 3
 #define GPS_ECHO false
 
 // Rotary Encoder
@@ -41,6 +42,7 @@
 #define AUDIO_TMR 11
 
 // Radio Pins
+#define RADIO_SCREEN 4
 #define RADIO_RST 5
 int RADIO_SDIO = 20;
 int RADIO_SCLK = 21;
@@ -87,8 +89,7 @@ void setup() {
   // GPS
   gps.begin(9600);
   gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  gps.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
-  gps.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
+  gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
   gps.sendCommand(PGCMD_ANTENNA);
 
   // GPS Interupt
@@ -155,6 +156,9 @@ bool menuMode = false;
 long currentMenuOption = 0;
 int menuOffset = 0;
 
+// GPS Timer
+uint32_t timer = millis();
+
 void loop() {
   // Main Screen
   int newScreen = readMainSwitch();
@@ -193,6 +197,10 @@ void loop() {
     }
     
     currentScreen = newScreen;
+
+    if (currentScreen == GPS_SCREEN) {
+      tft.fillRect(5, 225, 310, 8, PIP_GREEN_3);
+    }
 
     // Reset Sub Screen
     currentSubScreen = 0;
@@ -290,6 +298,74 @@ void loop() {
         default:
           break;
       }
+    }
+  }
+
+  // GPS
+  if (gps.newNMEAreceived()) {
+    if (!gps.parse(gps.lastNMEA())) {
+      return;
+    }
+  }
+
+  if (timer > millis())  timer = millis();
+
+  // approximately every 2 seconds or so, print out the current stats
+  if (millis() - timer > 2000) { 
+    timer = millis(); // reset the timer
+
+    if (currentScreen == GPS_SCREEN) {
+      tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
+      
+      tft.setTextSize(1);
+      tft.setCursor(5, 225);
+      
+      Serial.print("Fix: "); Serial.print((int)gps.fix);
+      Serial.print(" quality: "); Serial.println((int)gps.fixquality);
+
+      tft.print(' ');
+      tft.print(gps.latitude, 4); tft.print(gps.lat);
+      tft.print(", "); 
+      tft.print(gps.longitude, 4); tft.print(gps.lon);
+
+      tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+      tft.print(' ');
+      tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
+      
+      if (gps.fix) {
+        Serial.print("Location: ");
+        Serial.print(gps.latitude, 4); Serial.print(gps.lat);
+        Serial.print(", "); 
+        Serial.print(gps.longitude, 4); Serial.println(gps.lon);
+        Serial.print("Location (in degrees, works with Google Maps): ");
+        Serial.print(gps.latitudeDegrees, 4);
+        Serial.print(", "); 
+        Serial.println(gps.longitudeDegrees, 4);
+        
+        Serial.print("Speed (knots): "); Serial.println(gps.speed);
+        Serial.print("Angle: "); Serial.println(gps.angle);
+        Serial.print("Altitude: "); Serial.println(gps.altitude);
+        Serial.print("Satellites: "); Serial.println((int)gps.satellites);
+      }
+      
+      // Print Time
+      int hour = gps.hour;
+      int minute = gps.minute;
+      bool pm = false;
+      
+      if (hour > 12) {
+        hour -= 12;
+        pm = true;
+      }
+      
+      tft.print(' ');
+      if (hour < 10) { tft.print('0'); tft.print(hour, DEC); } else { tft.print(hour, DEC); };
+      tft.print(':');
+      if (minute < 10) { tft.print('0'); tft.print(minute, DEC); } else { tft.print(minute, DEC); };
+      if (pm) { tft.print(" PM "); } else { tft.print(" AM "); };
+
+      tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+      tft.print(' ');
     }
   }
 }
@@ -515,7 +591,7 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
 }
 
 int drawSubScreen(int current, bool force) {
-  if (currentScreen == 4) {
+  if (currentScreen == RADIO_SCREEN) {
     // Fall back on volume no sub screens
     radioVolume += current;
 
