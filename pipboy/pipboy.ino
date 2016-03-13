@@ -158,6 +158,7 @@ int menuOffset = 0;
 
 // GPS Timer
 uint32_t timer = millis();
+bool reloadGpsImage = true;
 
 void loop() {
   // Main Screen
@@ -315,6 +316,14 @@ void loop() {
     timer = millis(); // reset the timer
 
     if (currentScreen == GPS_SCREEN) {
+      // Map
+      if (reloadGpsImage) {
+        bmpDraw("pipmap.bmp", 10, 25);
+        
+        reloadGpsImage = false;
+      }
+
+      // Toolbar
       tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
       
       tft.setTextSize(1);
