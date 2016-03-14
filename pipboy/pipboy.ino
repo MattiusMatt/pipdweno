@@ -234,6 +234,9 @@ void loop() {
 
       Serial.print("Menu Mode: ");
       Serial.println(menuMode);
+
+      // Toggle local / world map
+      reloadGpsImage = true;
     }
 
     previousButtonValue = val;
@@ -318,7 +321,11 @@ void loop() {
     if (currentScreen == GPS_SCREEN) {
       // Map
       if (reloadGpsImage) {
-        bmpDraw("pipmap.bmp", 10, 25);
+        if (menuMode) {
+          bmpDraw("local.bmp", 10, 25);
+        } else {
+          bmpDraw("world.bmp", 10, 25);
+        }
         
         reloadGpsImage = false;
       }
@@ -375,6 +382,16 @@ void loop() {
 
       tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
       tft.print(' ');
+
+      // Print Local / World Map
+      tft.setCursor(248, 225);
+      tft.setTextColor(ILI9340_BLACK, PIP_GREEN_2);
+
+      if (menuMode) {
+        tft.print(" LOCAL MAP ");
+      } else {
+        tft.print(" WORLD MAP ");
+      }
     }
   }
 }
