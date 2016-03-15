@@ -24,7 +24,7 @@
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
 #define TFT_RST 8
 #define TFT_DC 9
-#define TFT_CS 10
+#define TFT_CS 12
 
 // SD Pin
 #define SD_CS 4
@@ -43,7 +43,7 @@
 
 // Radio Pins
 #define RADIO_SCREEN 4
-#define RADIO_RST 5
+#define RADIO_RST 13
 int RADIO_SDIO = 20;
 int RADIO_SCLK = 21;
 
