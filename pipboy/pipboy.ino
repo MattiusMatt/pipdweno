@@ -117,6 +117,7 @@ void setup() {
   // Loading
   tft.fillScreen(ILI9340_BLACK);
   loadText("1.txt", 0, 0, 20);
+  //Serial.print("Free RAM: "); Serial.println(getFreeRam(), DEC);
   delay(1000);
 
   // Vault Boy Loading
@@ -688,9 +689,12 @@ void play(char *file) {
 int readMainSwitch() {
   int sensorValue = analogRead(A7);
 
+  //Serial.print("Val: ");
+  //Serial.println(sensorValue);
+
   // Main Rotary Switch
-  if (sensorValue > 200 && sensorValue < 220) { return 0; }
-  else if (sensorValue > 250 && sensorValue < 270) { return 1; }
+  if (sensorValue > 200 && sensorValue < 230) { return 0; }
+  else if (sensorValue > 250 && sensorValue < 280) { return 1; }
   else if (sensorValue > 340 && sensorValue < 360) { return 2; }
   else if (sensorValue > 510 && sensorValue < 530) { return 3; }
   else if (sensorValue > 1000 && sensorValue < 1050) { return 4; }
