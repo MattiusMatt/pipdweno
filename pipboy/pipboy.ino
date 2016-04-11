@@ -97,6 +97,7 @@ void setup() {
   TIMSK0 |= _BV(OCIE0A);
 
   // Radio
+  // Wont work with WiFi Shield?
   radio.powerOn();
   radio.setVolume(0);
 
