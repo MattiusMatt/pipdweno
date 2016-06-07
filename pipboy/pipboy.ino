@@ -26,6 +26,15 @@
 #define TFT_DC 9
 #define TFT_CS 12
 
+// CC3000
+#define WIFI_SCK 13
+#define WIFI_MISO 12
+#define WIFI_MOSI 11
+#define WIFI_CS 10
+#define WIFI_VBAT_EN 5
+#define WIFI_CS_SD 4
+#define WIFI_IRQ 3
+
 // SD Pin
 #define SD_CS 4
 
@@ -103,6 +112,10 @@ void setup() {
 
   // Encoder Button
   pinMode(ENCODER_BUTTON, INPUT_PULLUP);
+
+  // Disable WiFi
+  pinMode(WIFI_CS, OUTPUT);
+  digitalWrite(WIFI_CS, HIGH);
   
   // TFT
   tft.begin();
