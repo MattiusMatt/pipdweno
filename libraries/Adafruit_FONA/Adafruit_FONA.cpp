@@ -1566,7 +1566,7 @@ boolean Adafruit_FONA::HTTP_GET_start(char *url,
     return false;
 
   // HTTP GET
-  if (! HTTP_action(FONA_HTTP_GET, status, datalen, 30000))
+  if (! HTTP_action(FONA_HTTP_GET, status, datalen, 50000))
     return false;
 
   DEBUG_PRINT(F("Status: ")); DEBUG_PRINTLN(*status);
