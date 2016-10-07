@@ -1,6 +1,7 @@
 #include <Adafruit_GPS.h>
 #include <Adafruit_ILI9340.h>
 #include <Adafruit_GFX.h>
+#include <Adafruit_FONA.h>
 #include <gfxfont.h>
 #include <SPI.h>
 #include <SD.h>
@@ -17,8 +18,14 @@
 
 // ASCII Consts
 #define ASCII_CR 13
+#define ASCII_LF 10
 #define ASCII_PIPE 124
 #define ASCII_TILDE 126
+
+// Fona Pins
+//#define FONA_RX 2
+//#define FONA_TX 3
+#define FONA_RST 5
 
 // TFT Pins
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
@@ -52,6 +59,11 @@ int RADIO_SCLK = 21;
 #define PIP_GREEN_2 800
 #define PIP_GREEN_3 416
 
+// Fona
+HardwareSerial *fonaSerial = &Serial2;
+Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+uint8_t fona_type;
+
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
@@ -81,6 +93,60 @@ void setup() {
     return;
   }
   Serial.println("OK!");
+
+  // Fona
+  Serial.println(F("FONA basic test"));
+  Serial.println(F("Initializing....(May take 3 seconds)"));
+
+  // Hard reset the fona
+  Serial.println(F("Resetting the fona"));
+  pinMode(FONA_RST, OUTPUT);
+  digitalWrite(FONA_RST, LOW);
+  delay(200);
+  digitalWrite(FONA_RST, HIGH);
+
+  fonaSerial->begin(4800);
+  
+  if (! fona.begin(*fonaSerial)) {
+    Serial.println(F("Couldn't find FONA"));
+    while (1);
+  }
+  
+  fona_type = fona.type();
+  
+  Serial.println(F("FONA is OK"));
+  Serial.print(F("Found "));
+  
+  switch (fona_type) {
+    case FONA800L:
+      Serial.println(F("FONA 800L")); break;
+    case FONA800H:
+      Serial.println(F("FONA 800H")); break;
+    case FONA808_V1:
+      Serial.println(F("FONA 808 (v1)")); break;
+    case FONA808_V2:
+      Serial.println(F("FONA 808 (v2)")); break;
+    case FONA3G_A:
+      Serial.println(F("FONA 3G (American)")); break;
+    case FONA3G_E:
+      Serial.println(F("FONA 3G (European)")); break;
+    default: 
+      Serial.println(F("???")); break;
+  }
+  
+  // Print module IMEI number.
+  char imei[15] = {0}; // MUST use a 16 character buffer for IMEI!
+  uint8_t imeiLen = fona.getIMEI(imei);
+  
+  if (imeiLen > 0) {
+    Serial.print("Module IMEI: "); Serial.println(imei);
+  }
+
+  fona.setGPRSNetworkSettings(F("idata.o2.co.uk"), F("vertigo"), F("password"));
+
+  delay(1000);
+
+  fona.enableGPRS(true);
 
   // Sound
   audio.speakerPin = AUDIO_TMR;
@@ -126,6 +192,12 @@ void setup() {
   delay(1000);
 
   //play("1.wav");
+
+  if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
+    Serial.println(F("Failed"));
+  } else {
+    Serial.println(F("Sent!"));
+  }
 }
 
 // GPS Interupt
