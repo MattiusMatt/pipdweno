@@ -7,7 +7,6 @@
 #include <SD.h>
 #include <TMRpcm.h>
 #include <Encoder.h>
-#include <Si4703_Breakout.h>
 #include <Wire.h>
 
 // Comment here when I know what this is for??
@@ -48,11 +47,8 @@
 // Audio Pin
 #define AUDIO_TMR 11
 
-// Radio Pins
+// Radio
 #define RADIO_SCREEN 4
-#define RADIO_RST 13
-int RADIO_SDIO = 20;
-int RADIO_SCLK = 21;
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -63,6 +59,7 @@ int RADIO_SCLK = 21;
 HardwareSerial *fonaSerial = &Serial2;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 uint8_t fona_type;
+bool headphones = true;
 
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
@@ -71,9 +68,8 @@ Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 Adafruit_GPS gps(&Serial3);
 
 // Radio
-#define RADIO_MAXVOL 15
-Si4703_Breakout radio(RADIO_RST, RADIO_SDIO, RADIO_SCLK);
-int radioVolume = 10;
+#define RADIO_MAXVOL 6
+int radioVolume = 6;
 
 // Encoder
 Encoder encoder(ENCODER_A, ENCODER_B);
@@ -81,21 +77,52 @@ Encoder encoder(ENCODER_A, ENCODER_B);
 // Sound
 TMRpcm audio;
 
+// Initialisation
+
 void setup() {
   // Debug using serial
   Serial.begin(115200);
 
-  // SD Card
-  Serial.print("Initializing SD card...");
+  if (!enableSD()) { return; }
+
+  if (!enableFona()) { return; }
+
+  if (!enableAudio()) { return; }
+
+  if (!enableGPS()) { return; }
+
+  if (!enableRadio()) { return; }
+
+  if (!enableTFT()) { return; }
+
+  // Encoder Button
+  pinMode(ENCODER_BUTTON, INPUT_PULLUP);
+
+  runLoadSequence();
+
+  /*if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
+    Serial.println(F("Failed"));
+  } else {
+    Serial.println(F("Sent!"));
+  }*/
+}
+
+bool enableSD() {
+  Serial.print(F("Initialising SD card..."));
   
   if (!SD.begin(SD_CS)) {
-    Serial.println("failed!");
-    return;
+    Serial.println(F("SD failed!"));
+    return false;
   }
-  Serial.println("OK!");
+  
+  Serial.println(F("SD Initialised!"));
 
+  return true;
+}
+
+bool enableFona() {
   // Fona
-  Serial.println(F("FONA basic test"));
+  Serial.println(F("Initialising FONA"));
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
   // Hard reset the fona
@@ -107,9 +134,9 @@ void setup() {
 
   fonaSerial->begin(4800);
   
-  if (! fona.begin(*fonaSerial)) {
+  if (!fona.begin(*fonaSerial)) {
     Serial.println(F("Couldn't find FONA"));
-    while (1);
+    return false;
   }
   
   fona_type = fona.type();
@@ -147,12 +174,30 @@ void setup() {
   delay(1000);
 
   fona.enableGPRS(true);
+  fona.setAudio(headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO);
+  fona.setMicVolume(headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO, 10);
 
-  // Sound
+  // Test Audio
+  //fona.playToolkitTone(2, 1000);
+
+  return true;
+}
+
+bool enableAudio() {
+  Serial.println(F("Initialising Audio"));
+  
   audio.speakerPin = AUDIO_TMR;
   audio.setVolume(5);
 
-  // GPS
+  // Test Audio
+  //play("1.wav");
+
+  return true;
+}
+
+bool enableGPS() {
+  Serial.println(F("Initialising GPS"));
+  
   gps.begin(9600);
   gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
@@ -162,12 +207,23 @@ void setup() {
   OCR0A = 0xAF;
   TIMSK0 |= _BV(OCIE0A);
 
-  // Radio
-  radio.powerOn();
-  radio.setVolume(0);
+  return true;
+}
 
-  // Encoder Button
-  pinMode(ENCODER_BUTTON, INPUT_PULLUP);
+bool enableRadio() {
+  Serial.println(F("Initialising Radio"));
+  
+  if (fona.FMradio(false, headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO)) {
+    Serial.println(F("Radio enabled"));
+  }
+  
+  fona.setFMVolume(radioVolume);
+
+  return true;
+}
+
+bool enableTFT() {
+  Serial.println(F("Initialising TFT"));
   
   // TFT
   tft.begin();
@@ -175,6 +231,12 @@ void setup() {
   tft.setTextColor(ILI9340_GREEN);
   tft.setTextSize(1);
 
+  return true;
+}
+
+void runLoadSequence() {
+  Serial.println(F("Running load sequence"));
+  
   // Splash 0
   tft.fillScreen(ILI9340_BLACK);
   loadText("0.txt", 0, 0, 0);
@@ -190,15 +252,9 @@ void setup() {
   tft.fillScreen(ILI9340_BLACK);
   bmpDraw("l.bmp", 95, 35);
   delay(1000);
-
-  //play("1.wav");
-
-  if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
-    Serial.println(F("Failed"));
-  } else {
-    Serial.println(F("Sent!"));
-  }
 }
+
+// Running
 
 // GPS Interupt
 SIGNAL(TIMER0_COMPA_vect) {
@@ -242,7 +298,7 @@ void loop() {
 
     newScreen = readMainSwitch();
 
-    radio.setVolume(0);
+    fona.FMradio(false);
     
     switch(newScreen){
       case 0:
@@ -265,7 +321,7 @@ void loop() {
         loadPip("4.pip", true);
 
         // Radio
-        radio.setVolume(radioVolume);
+        fona.FMradio(true);
         
         break;
     }
@@ -614,11 +670,13 @@ void loadMenuData(int current) {
   // Only Radio at the moment
   if (menuOptionsData[current] != "") {
     int station = menuOptionsData[current].toInt();
-
-    Serial.print("New Station: ");
-    Serial.println(station);
     
-    radio.setChannel(station);
+    if (! fona.tuneFMradio(station)) {
+      Serial.print("New Station: ");
+      Serial.println(station);
+    } else {
+      Serial.println(F("New Station: failed..."));
+    }
   }
 }
 
@@ -703,7 +761,7 @@ int drawSubScreen(int current, bool force) {
     Serial.print("Radio Volume: ");
     Serial.println(radioVolume);
 
-    radio.setVolume(radioVolume);
+    fona.setFMVolume(radioVolume);
     
     return currentSubScreen;
   }
