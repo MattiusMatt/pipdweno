@@ -322,6 +322,7 @@ void loop() {
 
         // Radio
         fona.FMradio(true);
+        loadMenuData(0);
         
         break;
     }
@@ -670,10 +671,12 @@ void loadMenuData(int current) {
   // Only Radio at the moment
   if (menuOptionsData[current] != "") {
     int station = menuOptionsData[current].toInt();
+
+    Serial.print("New Station: ");
+    Serial.println(station);
     
-    if (! fona.tuneFMradio(station)) {
-      Serial.print("New Station: ");
-      Serial.println(station);
+    if (!fona.tuneFMradio(station)) {
+      Serial.println(F("New Station: Tuned!"));
     } else {
       Serial.println(F("New Station: failed..."));
     }
