@@ -1,8 +1,8 @@
 #include "Adafruit_FONA.h"
 
-#define FONA_RX 2
-#define FONA_TX 3
-#define FONA_RST 4
+//#define FONA_RX 2
+//#define FONA_TX 3
+#define FONA_RST 5
 
 // ASCII Consts
 #define ASCII_CR 13
@@ -11,15 +11,8 @@
 // this is a large buffer for replies
 char replybuffer[255];
 
-// We default to using software serial. If you want to use hardware serial
-// (because softserial isnt supported) comment out the following three lines 
-// and uncomment the HardwareSerial line
-#include <SoftwareSerial.h>
-SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
-SoftwareSerial *fonaSerial = &fonaSS;
-
 // Hardware serial is also possible!
-//  HardwareSerial *fonaSerial = &Serial1;
+HardwareSerial *fonaSerial = &Serial2;
 
 // Use this for FONA 800 and 808s
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
@@ -81,15 +74,14 @@ void setup() {
 
   fona.setGPRSNetworkSettings(F("idata.o2.co.uk"), F("vertigo"), F("password"));
 
-  delay(1000);
-
-  fona.enableGPRS(true);
-
   /*if (!fona.sendSMS("07734264377", "I'm Alive!")) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("Sent!"));
   }*/
+
+  if (!fona.enableGPRS(true))
+    Serial.println(F("Failed to turn on"));
 
   delay(1000);
   
@@ -98,9 +90,9 @@ void setup() {
   atCommand("AT+HTTPTERM");
   atCommand("AT+HTTPINIT");
   atCommand("AT+HTTPPARA=\"CID\",1");
-  atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.486050&lon=-2.242141\"");
-  //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
-  atCommand("AT+HTTPPARA=\"BREAK\",2000");
+  //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.486050&lon=-2.242141\"");
+  atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
+  //atCommand("AT+HTTPPARA=\"BREAK\",2000");
   atCommand("AT+HTTPACTION=0");
   // wait for the download
   Serial.print(atResponse(30000));

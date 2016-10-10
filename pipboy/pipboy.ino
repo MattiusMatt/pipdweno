@@ -97,7 +97,7 @@ void setup() {
 
   // Encoder Button
   pinMode(ENCODER_BUTTON, INPUT_PULLUP);
-
+  
   runLoadSequence();
 
   /*if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
@@ -170,10 +170,6 @@ bool enableFona() {
   }
 
   fona.setGPRSNetworkSettings(F("idata.o2.co.uk"), F("vertigo"), F("password"));
-
-  delay(1000);
-
-  fona.enableGPRS(true);
   fona.setAudio(headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO);
   fona.setMicVolume(headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO, 10);
 
@@ -315,6 +311,7 @@ void loop() {
         
       case 3:
         loadPip("3.pip", true);
+        downloadMap();
         break;
         
       case 4:
@@ -1051,6 +1048,104 @@ void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
     
     txt.close();
   }
+}
+
+// Map Download
+
+void downloadMap() {
+  Serial.println(F("Attempting Download"));
+
+  fona.enableGPRS(true);
+
+  atResponse(30000);
+
+  atCommand("AT+HTTPTERM");
+  atCommand("AT+HTTPINIT");
+  atCommand("AT+HTTPPARA=\"CID\",1");
+  atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
+  //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
+  //atCommand("AT+HTTPPARA=\"BREAK\",2000");
+  atCommand("AT+HTTPACTION=0");
+  
+  // wait for the download
+  Serial.print(atResponse(30000));
+  
+  fona.println("AT+HTTPREAD");
+
+  // Save Image
+  Serial.println("Open image");
+
+  SD.remove("download.bmp");
+  
+  File imgWriter = SD.open("download.bmp", FILE_WRITE);
+
+  while(atResponseToFile(1000, imgWriter));
+
+  imgWriter.close();
+  Serial.println("Close image");
+
+  atCommand("AT+HTTPTERM");
+}
+
+void atCommand(char *command) {
+  Serial.println(command);
+  fona.println(command);
+  
+  Serial.print(atResponse(1000));
+}
+
+String atResponse(int maxWait) {
+  String line;
+  int currentWait = 0;
+  bool maxWaitReached = false;
+
+  while (line.length() == 0) {
+    while (!fona.available()) {
+      delay(100);
+      currentWait += 100;
+
+      if (currentWait > maxWait) {
+        maxWaitReached = true;
+        break;
+      }
+    }
+
+    if (maxWaitReached) {
+      break;
+    }
+    
+    while (fona.available()) {
+      char c = fona.read();
+
+      line += c;
+      currentWait = 0;
+    }
+  }
+
+  return line;
+}
+
+bool atResponseToFile(int maxWait, File &file) {
+  int currentWait = 0;
+  uint8_t data;
+
+  while (!fona.available()) {
+    delay(100);
+    currentWait += 100;
+
+    if (currentWait > maxWait) {
+      return false;
+    }
+  }
+  
+  while (fona.available()) {
+    data = fona.read();
+    
+    file.write(data);
+    Serial.print((char)data);
+  }
+
+  return true;
 }
 
 // Bmp loading
