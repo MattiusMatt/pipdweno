@@ -20,6 +20,8 @@
 #define ASCII_LF 10
 #define ASCII_PIPE 124
 #define ASCII_TILDE 126
+#define ASCII_B 66
+#define ASCII_M 77
 
 // Fona Pins
 //#define FONA_RX 2
@@ -1051,9 +1053,14 @@ void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
 }
 
 // Map Download
+bool startOfBitmapFound;
+bool endOfBitmapFound;
 
 void downloadMap() {
   Serial.println(F("Attempting Download"));
+
+  startOfBitmapFound = false;
+  endOfBitmapFound = false;
 
   fona.enableGPRS(true);
 
@@ -1140,8 +1147,25 @@ bool atResponseToFile(int maxWait, File &file) {
   
   while (fona.available()) {
     data = fona.read();
+
+    if (data == ASCII_B) {
+      if (fona.peek() == ASCII_M) {
+        startOfBitmapFound = true;
+      }
+    }
+
+    if (startOfBitmapFound) {
+      if (data == ASCII_CR) {
+        if (fona.peek() == ASCII_LF) {
+          endOfBitmapFound = true;
+        }
+      }
+
+      if (!endOfBitmapFound) {
+        file.write(data);
+      }
+    }
     
-    file.write(data);
     Serial.print((char)data);
   }
 
