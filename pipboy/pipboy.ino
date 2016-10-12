@@ -523,6 +523,9 @@ void loop() {
       }
     }
   }
+
+  // Async Map Download
+  downloadMap_Resume();
 }
 
 // Helper functions
@@ -1053,45 +1056,58 @@ void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
 }
 
 // Map Download
+bool mapDownloading;
 bool startOfBitmapFound;
 bool endOfBitmapFound;
 
 void downloadMap() {
-  Serial.println(F("Attempting Download"));
-
-  startOfBitmapFound = false;
-  endOfBitmapFound = false;
-
-  fona.enableGPRS(true);
-
-  atResponse(30000);
-
-  atCommand("AT+HTTPTERM");
-  atCommand("AT+HTTPINIT");
-  atCommand("AT+HTTPPARA=\"CID\",1");
-  atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
-  //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
-  //atCommand("AT+HTTPPARA=\"BREAK\",2000");
-  atCommand("AT+HTTPACTION=0");
+  if (!mapDownloading) {
+    Serial.println(F("Attempting Download"));
   
-  // wait for the download
-  Serial.print(atResponse(30000));
+    startOfBitmapFound = false;
+    endOfBitmapFound = false;
   
-  fona.println("AT+HTTPREAD");
-
-  // Save Image
-  Serial.println("Open image");
-
-  SD.remove("download.bmp");
+    fona.enableGPRS(true);
   
-  File imgWriter = SD.open("download.bmp", FILE_WRITE);
+    atResponse(30000);
+  
+    atCommand("AT+HTTPTERM");
+    atCommand("AT+HTTPINIT");
+    atCommand("AT+HTTPPARA=\"CID\",1");
+    atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
+    //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
+    atCommand("AT+HTTPPARA=\"BREAK\",2000");
+    atCommand("AT+HTTPACTION=0");
+    
+    // wait for the download
+    Serial.print(atResponse(30000));
 
-  while(atResponseToFile(1000, imgWriter));
+    mapDownloading = true;
+    
+    fona.println("AT+HTTPREAD");
+  
+    // Save Image
+    SD.remove("download.bmp");
+  }
+}
 
-  imgWriter.close();
-  Serial.println("Close image");
+void downloadMap_Resume() {
+  if (mapDownloading) {
+    Serial.println("Open image");
+    
+    File imgWriter = SD.open("download.bmp", FILE_WRITE);
+  
+    mapDownloading = atResponseToFile(3000, imgWriter);
+  
+    imgWriter.close();
+    Serial.println("Close image");
 
-  atCommand("AT+HTTPTERM");
+    if (!mapDownloading) {
+      atCommand("AT+HTTPTERM");
+
+      // Replace current map
+    }
+  }
 }
 
 void atCommand(char *command) {
@@ -1141,7 +1157,7 @@ bool atResponseToFile(int maxWait, File &file) {
     currentWait += 100;
 
     if (currentWait > maxWait) {
-      return false;
+      return true;
     }
   }
   
@@ -1169,7 +1185,7 @@ bool atResponseToFile(int maxWait, File &file) {
     Serial.print((char)data);
   }
 
-  return true;
+  return !endOfBitmapFound;
 }
 
 // Bmp loading
