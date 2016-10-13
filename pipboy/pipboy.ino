@@ -67,7 +67,8 @@
 HardwareSerial *fonaSerial = &Serial2;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 uint8_t fona_type;
-bool headphones = true;
+#define AUDIO_OUTPUT FONA_HEADSETAUDIO
+//#define AUDIO_OUTPUT FONA_EXTAUDIO
 
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
@@ -181,8 +182,8 @@ bool enableFona() {
   }
 
   fona.setGPRSNetworkSettings(F("idata.o2.co.uk"), F("vertigo"), F("password"));
-  fona.setAudio(headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO);
-  fona.setMicVolume(headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO, 10);
+  fona.setAudio(AUDIO_OUTPUT);
+  fona.setMicVolume(AUDIO_OUTPUT, 10);
 
   // Test Audio
   //fona.playToolkitTone(2, 1000);
@@ -219,8 +220,8 @@ bool enableGPS() {
 
 bool enableRadio() {
   Serial.println(F("Initialising Radio"));
-  
-  if (fona.FMradio(false, headphones ? FONA_HEADSETAUDIO : FONA_EXTAUDIO)) {
+
+  if (fona.FMradio(false, AUDIO_OUTPUT)) {
     Serial.println(F("Radio enabled"));
   }
   
@@ -328,7 +329,7 @@ void loop() {
         loadPip("4.pip", true);
 
         // Radio
-        fona.FMradio(true);
+        fona.FMradio(true, AUDIO_OUTPUT);
         loadMenuData(0);
         
         break;
@@ -698,7 +699,7 @@ void loadMenuData(int current) {
     Serial.print("New Station: ");
     Serial.println(station);
     
-    if (!fona.tuneFMradio(station)) {
+    if (fona.tuneFMradio(station)) {
       Serial.println(F("New Station: Tuned!"));
     } else {
       Serial.println(F("New Station: failed..."));
