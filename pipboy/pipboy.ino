@@ -52,10 +52,16 @@
 // Radio
 #define RADIO_SCREEN 4
 
+// Map Screen
+#define MAP_SCREEN 3
+
 // PIP Colours
 #define PIP_GREEN 2016
 #define PIP_GREEN_2 800
 #define PIP_GREEN_3 416
+
+// Buttons
+#define BUTTON_ONE 7
 
 // Fona
 HardwareSerial *fonaSerial = &Serial2;
@@ -99,6 +105,9 @@ void setup() {
 
   // Encoder Button
   pinMode(ENCODER_BUTTON, INPUT_PULLUP);
+
+  // Buttons
+  pinMode(BUTTON_ONE, INPUT_PULLUP);
   
   runLoadSequence();
 
@@ -313,7 +322,6 @@ void loop() {
         
       case 3:
         loadPip("3.pip", true);
-        downloadMap();
         break;
         
       case 4:
@@ -341,6 +349,22 @@ void loop() {
     currentMenuOption = 0;
     menuOffset = 0;
     menuMode = false;
+  }
+
+  // Button Control
+  int buttonVal = digitalRead(BUTTON_ONE);
+
+  if (buttonVal == LOW) {
+    delay(10);
+    buttonVal = digitalRead(BUTTON_ONE);
+
+    if (buttonVal == LOW && currentScreen == MAP_SCREEN) {
+      if (menuMode) {
+        downloadMap(true);
+      } else {
+        downloadMap(false);
+      }
+    }
   }
 
   // Menu Mode Toggle
@@ -451,9 +475,9 @@ void loop() {
       // Map
       if (reloadGpsImage) {
         if (menuMode) {
-          bmpDraw("local.bmp", 10, 25);
+          bmpDraw("LOCAL.BMP", 10, 25);
         } else {
-          bmpDraw("world.bmp", 10, 25);
+          bmpDraw("WORLD.BMP", 10, 25);
         }
         
         reloadGpsImage = false;
@@ -523,9 +547,6 @@ void loop() {
       }
     }
   }
-
-  // Async Map Download
-  downloadMap_Resume();
 }
 
 // Helper functions
@@ -1060,24 +1081,50 @@ bool mapDownloading;
 bool startOfBitmapFound;
 bool endOfBitmapFound;
 
-void downloadMap() {
+void downloadMap(bool localMap) {
   if (!mapDownloading) {
     Serial.println(F("Attempting Download"));
+
+    char *imageName;
+
+    if (localMap) {
+      imageName = "LOCAL.BMP";
+    } else {
+      imageName = "WORLD.BMP";
+    }
+
+    // Blank out Map
+    tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+    tft.fillRect(0, 25, 320, 200, ILI9340_BLACK);
+    tft.setCursor(0,30);
+    
+    tft.println(F("Downloading new map..."));
   
     startOfBitmapFound = false;
     endOfBitmapFound = false;
+
+    tft.println(F("Enabling GPRS..."));
   
     fona.enableGPRS(true);
   
-    atResponse(30000);
+    atResponse(1000);
+
+    tft.println(F("Requesting Map..."));
   
     atCommand("AT+HTTPTERM");
     atCommand("AT+HTTPINIT");
     atCommand("AT+HTTPPARA=\"CID\",1");
-    atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
+    if (localMap) {
+      atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
+    } else {
+      atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/world?lat=53.5049&lon=-2.0154\"");
+    }
     //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
     atCommand("AT+HTTPPARA=\"BREAK\",2000");
     atCommand("AT+HTTPACTION=0");
+
+    tft.println(F("Saving Map..."));
+    delay(1000);
     
     // wait for the download
     Serial.print(atResponse(30000));
@@ -1085,27 +1132,34 @@ void downloadMap() {
     mapDownloading = true;
     
     fona.println("AT+HTTPREAD");
-  
+
     // Save Image
-    SD.remove("download.bmp");
+    SD.remove(imageName);
+
+    downloadMap_Resume(imageName);
   }
 }
 
-void downloadMap_Resume() {
+void downloadMap_Resume(char *imageName) {
   if (mapDownloading) {
     Serial.println("Open image");
     
-    File imgWriter = SD.open("download.bmp", FILE_WRITE);
-  
-    mapDownloading = atResponseToFile(3000, imgWriter);
+    File imgWriter = SD.open(imageName, FILE_WRITE);
+    
+    while (mapDownloading) {
+      mapDownloading = atResponseToFile(imgWriter);
+    }
   
     imgWriter.close();
+
+    delay(1000);
+
     Serial.println("Close image");
 
     if (!mapDownloading) {
       atCommand("AT+HTTPTERM");
-
-      // Replace current map
+      tft.fillRect(0, 25, 320, 200, ILI9340_BLACK);
+      bmpDraw(imageName, 10, 25);
     }
   }
 }
@@ -1113,7 +1167,6 @@ void downloadMap_Resume() {
 void atCommand(char *command) {
   Serial.println(command);
   fona.println(command);
-  
   Serial.print(atResponse(1000));
 }
 
@@ -1148,17 +1201,11 @@ String atResponse(int maxWait) {
   return line;
 }
 
-bool atResponseToFile(int maxWait, File &file) {
-  int currentWait = 0;
+bool atResponseToFile(File &file) {
   uint8_t data;
 
   while (!fona.available()) {
     delay(100);
-    currentWait += 100;
-
-    if (currentWait > maxWait) {
-      return true;
-    }
   }
   
   while (fona.available()) {
