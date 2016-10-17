@@ -54,6 +54,12 @@
 
 // Map Screen
 #define MAP_SCREEN 3
+#define MAP_POSX 10
+#define MAP_POSY 25
+#define MAP_WIDTH 300
+#define MAP_HEIGHT 195
+#define MAP_POS_WIDTH 17
+#define MAP_POS_HEIGHT 24
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -361,9 +367,9 @@ void loop() {
 
     if (buttonVal == LOW && currentScreen == MAP_SCREEN) {
       if (menuMode) {
-        downloadMap(true);
+        downloadMap(true, "53.5049", "-2.0154");
       } else {
-        downloadMap(false);
+        downloadMap(false, "53.5049", "-2.0154");
       }
     }
   }
@@ -476,10 +482,12 @@ void loop() {
       // Map
       if (reloadGpsImage) {
         if (menuMode) {
-          bmpDraw("LOCAL.BMP", 10, 25);
+          bmpDraw("LOCAL.BMP", MAP_POSX, MAP_POSY);
         } else {
-          bmpDraw("WORLD.BMP", 10, 25);
+          bmpDraw("WORLD.BMP", MAP_POSX, MAP_POSY);
         }
+
+        bmpDraw("location.bmp", ((MAP_WIDTH / 2) + MAP_POSX) - (MAP_POS_WIDTH / 2), ((MAP_HEIGHT / 2) + MAP_POSY) - (MAP_POS_HEIGHT / 2));
         
         reloadGpsImage = false;
       }
@@ -1082,7 +1090,7 @@ bool mapDownloading;
 bool startOfBitmapFound;
 bool endOfBitmapFound;
 
-void downloadMap(bool localMap) {
+void downloadMap(bool localMap, char *lat, char *lon) {
   if (!mapDownloading) {
     Serial.println(F("Attempting Download"));
 
@@ -1111,16 +1119,30 @@ void downloadMap(bool localMap) {
     atResponse(1000);
 
     tft.println(F("Requesting Map..."));
+
+    // Build Url Command
+    String urlCommand = "AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/";
+
+    if (localMap) {
+      urlCommand.concat("local?lat=");
+      //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
+    } else {
+      urlCommand.concat("world?lat=");
+      //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/world?lat=53.5049&lon=-2.0154\"");
+    }
+    
+    urlCommand.concat(lat);
+    urlCommand.concat("&lon=");
+    urlCommand.concat(lon);
+    urlCommand.concat("\"");
+    
+    char urlCommandChars[urlCommand.length()];
+    urlCommand.toCharArray(urlCommandChars, urlCommand.length());
   
     atCommand("AT+HTTPTERM");
     atCommand("AT+HTTPINIT");
     atCommand("AT+HTTPPARA=\"CID\",1");
-    if (localMap) {
-      atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/local?lat=53.5049&lon=-2.0154\"");
-    } else {
-      atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/world?lat=53.5049&lon=-2.0154\"");
-    }
-    //atCommand("AT+HTTPPARA=\"URL\",\"http://mattius.no-ip.org:7507/test\"");
+    atCommand(urlCommandChars);
     atCommand("AT+HTTPPARA=\"BREAK\",2000");
     atCommand("AT+HTTPACTION=0");
 
@@ -1137,11 +1159,11 @@ void downloadMap(bool localMap) {
     // Save Image
     SD.remove(imageName);
 
-    downloadMap_Resume(imageName);
+    downloadMap_Resume(localMap, imageName, lat, lon);
   }
 }
 
-void downloadMap_Resume(char *imageName) {
+void downloadMap_Resume(bool localMap, char *imageName, char *lat, char *lon) {
   if (mapDownloading) {
     Serial.println("Open image");
     
@@ -1160,7 +1182,23 @@ void downloadMap_Resume(char *imageName) {
     if (!mapDownloading) {
       atCommand("AT+HTTPTERM");
       tft.fillRect(0, 25, 320, 200, ILI9340_BLACK);
-      bmpDraw(imageName, 10, 25);
+      bmpDraw(imageName, MAP_POSX, MAP_POSY);
+
+      File locationWriter;
+      
+      if (localMap) {
+        SD.remove("local.txt");
+        locationWriter = SD.open("local.txt", FILE_WRITE);
+      } else {
+        SD.remove("world.txt");
+        locationWriter = SD.open("world.txt", FILE_WRITE);
+      }
+
+      locationWriter.print(lat);
+      locationWriter.print('|');
+      locationWriter.print(lon);
+
+      locationWriter.close();
     }
   }
 }
@@ -1343,6 +1381,7 @@ void bmpDraw(char *filename, uint16_t x, uint16_t y) {
             b = sdbuffer[buffidx++];
             g = sdbuffer[buffidx++];
             r = sdbuffer[buffidx++];
+
             tft.pushColor(tft.Color565(r,g,b));
           } // end pixel
         } // end scanline
