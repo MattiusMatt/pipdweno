@@ -81,6 +81,10 @@ Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
 // GPS
 Adafruit_GPS gps(&Serial3);
+String map_local_lat = "";
+String map_local_lon = "";
+String map_world_lat = "";
+String map_world_lon = "";
 
 // Radio
 #define RADIO_MAXVOL 6
@@ -117,6 +121,8 @@ void setup() {
   pinMode(BUTTON_ONE, INPUT_PULLUP);
   
   runLoadSequence();
+
+  loadMapCentres();
 
   /*if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
     Serial.println(F("Failed"));
@@ -1090,6 +1096,50 @@ bool mapDownloading;
 bool startOfBitmapFound;
 bool endOfBitmapFound;
 
+void loadMapCentres() {
+  loadMapCentre(true);
+  loadMapCentre(false);
+}
+
+void loadMapCentre(bool local) {
+  File coordsFile;
+  String lat;
+  String lon;
+
+  if (local) {
+    coordsFile = SD.open("local.txt");
+  } else {
+    coordsFile = SD.open("world.txt");
+  }
+
+  if (coordsFile) {
+    bool latFound = false;
+    
+    while (coordsFile.available()) {
+      if (!latFound) {
+        lat.concat(char(coordsFile.read()));
+      } else {
+        lon.concat(char(coordsFile.read()));
+      }
+      
+      if (coordsFile.peek() == ASCII_PIPE) {
+        latFound = true;
+        coordsFile.read(); // Om nom nom nom
+      }
+    }
+    
+    coordsFile.close();
+  }
+
+  if (local) {
+    map_local_lat = lat;
+    map_local_lon = lon;
+  } else {
+    map_world_lat = lat;
+    map_world_lon = lon;
+  }
+}
+
 void downloadMap(bool localMap, char *lat, char *lon) {
   if (!mapDownloading) {
     Serial.println(F("Attempting Download"));
@@ -1189,9 +1239,15 @@ void downloadMap_Resume(bool localMap, char *imageName, char *lat, char *lon) {
       if (localMap) {
         SD.remove("local.txt");
         locationWriter = SD.open("local.txt", FILE_WRITE);
+
+        map_local_lat = lat;
+        map_local_lon = lon;
       } else {
         SD.remove("world.txt");
         locationWriter = SD.open("world.txt", FILE_WRITE);
+
+        map_world_lat = lat;
+        map_world_lon = lon;
       }
 
       locationWriter.print(lat);
