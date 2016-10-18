@@ -60,6 +60,11 @@
 #define MAP_HEIGHT 195
 #define MAP_POS_WIDTH 17
 #define MAP_POS_HEIGHT 24
+#define PIXEL_TILE_SIZE 256.000
+//#define DEGREES_TO_RADIANS_RATIO 180.000 / PI
+#define RADIANS_TO_DEGREES_RATIO PI / 180.000
+#define ZOOM_LOCAL 15
+#define ZOOM_WORLD 9
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -489,11 +494,11 @@ void loop() {
       if (reloadGpsImage) {
         if (menuMode) {
           bmpDraw("LOCAL.BMP", MAP_POSX, MAP_POSY);
+          drawPosition(map_local_lat, map_local_lon, "53.5079", "-2.0174", ZOOM_LOCAL);
         } else {
           bmpDraw("WORLD.BMP", MAP_POSX, MAP_POSY);
+          drawPosition(map_world_lat, map_world_lon, "53.5079", "-2.0174", ZOOM_WORLD);
         }
-
-        bmpDraw("location.bmp", ((MAP_WIDTH / 2) + MAP_POSX) - (MAP_POS_WIDTH / 2), ((MAP_HEIGHT / 2) + MAP_POSY) - (MAP_POS_HEIGHT / 2));
         
         reloadGpsImage = false;
       }
@@ -1089,6 +1094,61 @@ void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
     
     txt.close();
   }
+}
+
+// Map Coords Conversion
+double pixelGlobeCentre;
+double xPixelsToDegreesRatio;
+double yPixelsToRadiansRatio;
+
+void calibrateMapScale(int zoomLevel) {
+  double pixelGlobeSize = PIXEL_TILE_SIZE * pow(2.000, zoomLevel);
+  xPixelsToDegreesRatio = pixelGlobeSize / 360.000;
+  yPixelsToRadiansRatio = pixelGlobeSize / (pixelGlobeSize / 2.000);
+
+  float halfPixelGlobeSize = (float)(pixelGlobeSize / 2.000);
+  pixelGlobeCentre = halfPixelGlobeSize;
+}
+
+float convertLatToXPos(String latStr) {
+  double lat = latStr.toDouble();
+
+  return (float)round(pixelGlobeCentre + (lat * xPixelsToDegreesRatio));
+}
+
+float convertLonToYPos(String lonStr) {
+  double lon = lonStr.toDouble();
+  double f = min(max(sin(lon * RADIANS_TO_DEGREES_RATIO), -0.9999), -0.9999);
+
+  return (float)round(pixelGlobeCentre + 0.5000 * log((1.000 + f) / (1.000 -f)) * -yPixelsToRadiansRatio);
+}
+
+void drawPosition(String centreLat, String centreLon, String posLat, String posLon, int zoomLevel) {
+  calibrateMapScale(zoomLevel);
+
+  Serial.print("Centre: ");
+  Serial.print(centreLat);
+  Serial.print(" ");
+  Serial.print(centreLon);
+  Serial.print(" ");
+  Serial.println(zoomLevel);
+
+  Serial.print("Pos: ");
+  Serial.print(posLat);
+  Serial.print(" ");
+  Serial.print(posLon);
+  Serial.print(" ");
+  Serial.println(zoomLevel);
+  
+  float centreX = convertLatToXPos(centreLat);
+  float centreY = convertLonToYPos(centreLon);
+  float posX = convertLatToXPos(posLat);
+  float posY = convertLonToYPos(posLon);
+
+  float offsetX = centreX - posX;
+  float offsetY = centreY - posY;
+
+  bmpDraw("location.bmp", (((MAP_WIDTH / 2) + MAP_POSX) - (MAP_POS_WIDTH / 2)) + offsetX, (((MAP_HEIGHT / 2) + MAP_POSY) - (MAP_POS_HEIGHT / 2)) + offsetY);
 }
 
 // Map Download
