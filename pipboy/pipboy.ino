@@ -129,11 +129,11 @@ void setup() {
 
   loadMapCentres();
 
-  /*if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
+  if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("Sent!"));
-  }*/
+  }
 }
 
 bool enableSD() {
@@ -494,10 +494,10 @@ void loop() {
       if (reloadGpsImage) {
         if (menuMode) {
           bmpDraw("LOCAL.BMP", MAP_POSX, MAP_POSY);
-          drawPosition(map_local_lat, map_local_lon, "53.5079", "-2.0174", ZOOM_LOCAL);
+          drawPosition(map_local_lat, map_local_lon, "53.5099", "-2.0184", ZOOM_LOCAL);
         } else {
           bmpDraw("WORLD.BMP", MAP_POSX, MAP_POSY);
-          drawPosition(map_world_lat, map_world_lon, "53.5079", "-2.0174", ZOOM_WORLD);
+          drawPosition(map_world_lat, map_world_lon, "53.5099", "-2.0184", ZOOM_WORLD);
         }
         
         reloadGpsImage = false;
@@ -513,9 +513,10 @@ void loop() {
       Serial.print(" quality: "); Serial.println((int)gps.fixquality);
 
       tft.print(' ');
-      tft.print(gps.latitude, 4); tft.print(gps.lat);
+      tft.print(gps.latitudeDegrees, 4);
       tft.print(", "); 
-      tft.print(gps.longitude, 4); tft.print(gps.lon);
+      tft.print(gps.longitudeDegrees, 4);
+      tft.print(' ');
 
       tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
       tft.print(' ');
@@ -1120,7 +1121,7 @@ float convertLonToYPos(String lonStr) {
   double lon = lonStr.toDouble();
   double f = min(max(sin(lon * RADIANS_TO_DEGREES_RATIO), -0.9999), -0.9999);
 
-  return (float)round(pixelGlobeCentre + 0.5000 * log((1.000 + f) / (1.000 -f)) * -yPixelsToRadiansRatio);
+  return round(pixelGlobeCentre + 0.5000 * log((1.000 + f) / (1.000 -f)) * -yPixelsToRadiansRatio);
 }
 
 void drawPosition(String centreLat, String centreLon, String posLat, String posLon, int zoomLevel) {
@@ -1145,10 +1146,21 @@ void drawPosition(String centreLat, String centreLon, String posLat, String posL
   float posX = convertLatToXPos(posLat);
   float posY = convertLonToYPos(posLon);
 
-  float offsetX = centreX - posX;
-  float offsetY = centreY - posY;
+  float pixelDistanceX = centreX - posX;
+  float pixelDistanceY = centreY - posY;
 
-  bmpDraw("location.bmp", (((MAP_WIDTH / 2) + MAP_POSX) - (MAP_POS_WIDTH / 2)) + offsetX, (((MAP_HEIGHT / 2) + MAP_POSY) - (MAP_POS_HEIGHT / 2)) + offsetY);
+  float centreImageX = MAP_WIDTH / 2;
+  float centreImageY = MAP_HEIGHT / 2;
+
+  float centreImagePosX = MAP_POS_WIDTH / 2;
+  float centreImagePosY = MAP_POS_HEIGHT / 2;
+
+  Serial.print("Pixel distance X: ");
+  Serial.println(pixelDistanceX);
+  Serial.print("Pixel distance Y: ");
+  Serial.println(pixelDistanceY);
+
+  bmpDraw("location.bmp", ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
 }
 
 // Map Download
