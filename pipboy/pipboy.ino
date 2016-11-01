@@ -129,11 +129,11 @@ void setup() {
 
   loadMapCentres();
 
-  if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
+  /*if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("Sent!"));
-  }
+  }*/
 }
 
 bool enableSD() {
@@ -340,6 +340,9 @@ void loop() {
         
       case 3:
         loadPip("3.pip", true);
+
+        reloadGpsImage = true;
+        
         break;
         
       case 4:
