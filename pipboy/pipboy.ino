@@ -65,6 +65,8 @@
 #define RADIANS_TO_DEGREES_RATIO PI / 180.000
 #define ZOOM_LOCAL 15
 #define ZOOM_WORLD 9
+const char MAP_LOCAL[] = "LOCAL.BMP";
+const char MAP_WORLD[] = "WORLD.BMP";
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -496,10 +498,10 @@ void loop() {
       // Map
       if (reloadGpsImage) {
         if (menuMode) {
-          bmpDraw("LOCAL.BMP", MAP_POSX, MAP_POSY);
+          bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
           drawPosition(map_local_lat, map_local_lon, "53.5099", "-2.0184", ZOOM_LOCAL);
         } else {
-          bmpDraw("WORLD.BMP", MAP_POSX, MAP_POSY);
+          bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
           drawPosition(map_world_lat, map_world_lon, "53.5099", "-2.0184", ZOOM_WORLD);
         }
         
@@ -907,7 +909,7 @@ bool writePip(bool appendMode) {
   return data == 11;
 }
 
-void loadPip(char *screen, bool mainScreen) {
+void loadPip(const char screen[], bool mainScreen) {
   File pip = SD.open(screen);
 
   Serial.println();
@@ -1082,7 +1084,7 @@ void renderPipText(File &pip, uint16_t x, uint16_t y) {
   Serial.println();
 }
 
-void loadText(char *file, uint16_t x, uint16_t y, int sleep) {
+void loadText(const char file[], uint16_t x, uint16_t y, int sleep) {
   File txt = SD.open(file);
   
   if (txt) {
@@ -1234,16 +1236,16 @@ void loadMapCentre(bool local) {
   }
 }
 
-void downloadMap(bool localMap, char *lat, char *lon) {
+void downloadMap(bool localMap, const char lat[], const char lon[]) {
   if (!mapDownloading) {
     Serial.println(F("Attempting Download"));
 
-    char *imageName;
+    const char *imageName;
 
     if (localMap) {
-      imageName = "LOCAL.BMP";
+      imageName = MAP_LOCAL;
     } else {
-      imageName = "WORLD.BMP";
+      imageName = MAP_WORLD;
     }
 
     // Blank out Map
@@ -1307,7 +1309,7 @@ void downloadMap(bool localMap, char *lat, char *lon) {
   }
 }
 
-void downloadMap_Resume(bool localMap, char *imageName, char *lat, char *lon) {
+void downloadMap_Resume(bool localMap, const char imageName[], const char lat[], const char lon[]) {
   if (mapDownloading) {
     Serial.println("Open image");
     
@@ -1353,7 +1355,7 @@ void downloadMap_Resume(bool localMap, char *imageName, char *lat, char *lon) {
   }
 }
 
-void atCommand(char *command) {
+void atCommand(const char command[]) {
   Serial.println(command);
   fona.println(command);
   Serial.print(atResponse(1000));
@@ -1435,7 +1437,7 @@ bool atResponseToFile(File &file) {
 
 #define BUFFPIXEL 40
 
-void bmpDraw(char *filename, uint16_t x, uint16_t y) {
+void bmpDraw(const char filename[], uint16_t x, uint16_t y) {
 
   File     bmpFile;
   int      bmpWidth, bmpHeight;   // W+H in pixels
@@ -1458,7 +1460,7 @@ void bmpDraw(char *filename, uint16_t x, uint16_t y) {
   Serial.println('\'');
 
   // Open requested file on SD card
-  if ((bmpFile = SD.open(filename)) == NULL) {
+  if ((bmpFile = SD.open(filename)) == 0) {
     Serial.print("File not found");
     return;
   }
