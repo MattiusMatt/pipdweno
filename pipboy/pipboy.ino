@@ -511,9 +511,6 @@ void loop() {
       
       tft.setTextSize(1);
       tft.setCursor(5, 225);
-      
-      Serial.print("Fix: "); Serial.print((int)gps.fix);
-      Serial.print(" quality: "); Serial.println((int)gps.fixquality);
 
       tft.print(' ');
       tft.print(gps.latitudeDegrees, 4);
@@ -526,6 +523,8 @@ void loop() {
       tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
       
       if (gps.fix) {
+        Serial.print("Fix: "); Serial.print((int)gps.fix);
+        Serial.print(" quality: "); Serial.println((int)gps.fixquality);
         Serial.print("Location: ");
         Serial.print(gps.latitude, 4); Serial.print(gps.lat);
         Serial.print(", "); 
@@ -1108,7 +1107,7 @@ double yPixelsToRadiansRatio;
 void calibrateMapScale(int zoomLevel) {
   double pixelGlobeSize = PIXEL_TILE_SIZE * pow(2.000, zoomLevel);
   xPixelsToDegreesRatio = pixelGlobeSize / 360.000;
-  yPixelsToRadiansRatio = pixelGlobeSize / (pixelGlobeSize / 2.000);
+  yPixelsToRadiansRatio = pixelGlobeSize / (2.000 * PI);
 
   float halfPixelGlobeSize = (float)(pixelGlobeSize / 2.000);
   pixelGlobeCentre = halfPixelGlobeSize;
@@ -1117,25 +1116,52 @@ void calibrateMapScale(int zoomLevel) {
 float convertLatToXPos(String latStr) {
   double lat = latStr.toDouble();
 
-  return (float)round(pixelGlobeCentre + (lat * xPixelsToDegreesRatio));
+  float xPos = (float)round(pixelGlobeCentre + (lat * xPixelsToDegreesRatio));
+
+  Serial.print("XPixels: ");
+  Serial.println(xPos);
+
+  return xPos;
 }
 
 float convertLonToYPos(String lonStr) {
   double lon = lonStr.toDouble();
-  double f = min(max(sin(lon * RADIANS_TO_DEGREES_RATIO), -0.9999), -0.9999);
+  double f = min(max(sin(lon * (RADIANS_TO_DEGREES_RATIO)), -0.9999), 0.9999);
 
-  return round(pixelGlobeCentre + 0.5000 * log((1.000 + f) / (1.000 -f)) * -yPixelsToRadiansRatio);
+  Serial.print("F: ");
+  Serial.println(f);
+
+  float yPos = (float)round((pixelGlobeCentre) + 0.5 * log((1 + f) / (1 -f)) * -yPixelsToRadiansRatio);
+
+  Serial.print("YPixels: ");
+  Serial.println(yPos);
+
+  return yPos;
 }
 
 void drawPosition(String centreLat, String centreLon, String posLat, String posLon, int zoomLevel) {
   calibrateMapScale(zoomLevel);
-
+  
+  Serial.print("PixelTileSize: ");
+  Serial.println(PIXEL_TILE_SIZE);
+  Serial.print("RadiansToDegreesRatio: ");
+  Serial.println(RADIANS_TO_DEGREES_RATIO);
+  Serial.print("XPixelsToDegreesRatio: ");
+  Serial.println(xPixelsToDegreesRatio);
+  Serial.print("YPixelsToRadiansRatio: ");
+  Serial.println(yPixelsToRadiansRatio);
+  Serial.print("PixelGlobeCentre: ");
+  Serial.println(pixelGlobeCentre);
+  
   Serial.print("Centre: ");
   Serial.print(centreLat);
   Serial.print(" ");
   Serial.print(centreLon);
   Serial.print(" ");
   Serial.println(zoomLevel);
+  
+  float centreX = convertLatToXPos(centreLat);
+  float centreY = convertLonToYPos(centreLon);
 
   Serial.print("Pos: ");
   Serial.print(posLat);
@@ -1144,8 +1170,6 @@ void drawPosition(String centreLat, String centreLon, String posLat, String posL
   Serial.print(" ");
   Serial.println(zoomLevel);
   
-  float centreX = convertLatToXPos(centreLat);
-  float centreY = convertLonToYPos(centreLon);
   float posX = convertLatToXPos(posLat);
   float posY = convertLonToYPos(posLon);
 
@@ -1157,11 +1181,6 @@ void drawPosition(String centreLat, String centreLon, String posLat, String posL
 
   float centreImagePosX = MAP_POS_WIDTH / 2;
   float centreImagePosY = MAP_POS_HEIGHT / 2;
-
-  Serial.print("Pixel distance X: ");
-  Serial.println(pixelDistanceX);
-  Serial.print("Pixel distance Y: ");
-  Serial.println(pixelDistanceY);
 
   bmpDraw("location.bmp", ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
 }
