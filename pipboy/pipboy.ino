@@ -67,6 +67,14 @@
 #define ZOOM_WORLD 9
 const char MAP_LOCAL[] = "LOCAL.BMP";
 const char MAP_WORLD[] = "WORLD.BMP";
+const char MAP_N[] = "n.bmp";
+const char MAP_NE[] = "ne.bmp";
+const char MAP_E[] = "e.bmp";
+const char MAP_SE[] = "se.bmp";
+const char MAP_S[] = "s.bmp";
+const char MAP_SW[] = "sw.bmp";
+const char MAP_W[] = "w.bmp";
+const char MAP_NW[] = "nw.bmp";
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -313,7 +321,9 @@ long currentMenuOption = 0;
 int menuOffset = 0;
 
 // GPS Timer
-uint32_t timer = millis();
+uint32_t gps_timer = millis();
+uint32_t loc_timer = millis();
+bool reloadLocation = true;
 bool reloadGpsImage = true;
 
 void loop() {
@@ -381,7 +391,7 @@ void loop() {
     delay(10);
     buttonVal = digitalRead(BUTTON_ONE);
 
-    if (buttonVal == LOW && currentScreen == MAP_SCREEN) {
+    if (buttonVal == LOW && currentScreen == MAP_SCREEN && gps.fix) {
       if (menuMode) {
         downloadMap(true, "53.5049", "-2.0154");
       } else {
@@ -488,26 +498,36 @@ void loop() {
     }
   }
 
-  if (timer > millis())  timer = millis();
+  // Map
+  if (reloadGpsImage) {
+    if (!gps.fix) {
+      if (menuMode) {
+        bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+      } else {
+        bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+      }
+    } else {
+      loc_timer = millis();
+      reloadLocation = true;
+    }
+    
+    reloadGpsImage = false;
+  }
+
+  if (loc_timer > millis())  loc_timer = millis();
+
+  if (millis() - loc_timer > 30000) {
+    loc_timer = millis();
+    reloadLocation = true;
+  }
+
+  if (gps_timer > millis())  gps_timer = millis();
 
   // approximately every 2 seconds or so, print out the current stats
-  if (millis() - timer > 2000) { 
-    timer = millis(); // reset the timer
+  if (millis() - gps_timer > 2000) { 
+    gps_timer = millis(); // reset the gps_timer
 
     if (currentScreen == GPS_SCREEN) {
-      // Map
-      if (reloadGpsImage) {
-        if (menuMode) {
-          bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
-          drawPosition(map_local_lat, map_local_lon, "53.5099", "-2.0184", ZOOM_LOCAL);
-        } else {
-          bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
-          drawPosition(map_world_lat, map_world_lon, "53.5099", "-2.0184", ZOOM_WORLD);
-        }
-        
-        reloadGpsImage = false;
-      }
-
       // Toolbar
       tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
       
@@ -525,6 +545,18 @@ void loop() {
       tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
       
       if (gps.fix) {
+        if (reloadLocation) {
+          if (menuMode) {
+            bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+            drawPosition(map_local_lat.toDouble(), map_local_lon.toDouble(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_LOCAL, gps.angle);
+          } else {
+            bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+            drawPosition(map_world_lat.toDouble(), map_world_lon.toDouble(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_WORLD, gps.angle);
+          }
+
+          reloadLocation = false;
+        }
+        
         Serial.print("Fix: "); Serial.print((int)gps.fix);
         Serial.print(" quality: "); Serial.println((int)gps.fixquality);
         Serial.print("Location: ");
@@ -1115,9 +1147,7 @@ void calibrateMapScale(int zoomLevel) {
   pixelGlobeCentre = halfPixelGlobeSize;
 }
 
-float convertLatToXPos(String latStr) {
-  double lat = latStr.toDouble();
-
+float convertLatToXPos(double lat) {
   float xPos = (float)round(pixelGlobeCentre + (lat * xPixelsToDegreesRatio));
 
   Serial.print("XPixels: ");
@@ -1126,8 +1156,7 @@ float convertLatToXPos(String latStr) {
   return xPos;
 }
 
-float convertLonToYPos(String lonStr) {
-  double lon = lonStr.toDouble();
+float convertLonToYPos(double lon) {
   double f = min(max(sin(lon * (RADIANS_TO_DEGREES_RATIO)), -0.9999), 0.9999);
 
   Serial.print("F: ");
@@ -1141,7 +1170,7 @@ float convertLonToYPos(String lonStr) {
   return yPos;
 }
 
-void drawPosition(String centreLat, String centreLon, String posLat, String posLon, int zoomLevel) {
+void drawPosition(double centreLat, double centreLon, double posLat, double posLon, int zoomLevel, int angle) {
   calibrateMapScale(zoomLevel);
   
   Serial.print("PixelTileSize: ");
@@ -1184,7 +1213,25 @@ void drawPosition(String centreLat, String centreLon, String posLat, String posL
   float centreImagePosX = MAP_POS_WIDTH / 2;
   float centreImagePosY = MAP_POS_HEIGHT / 2;
 
-  bmpDraw("location.bmp", ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  if (angle >= 355 && angle <= 5) {
+    bmpDraw(MAP_N, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else if (angle > 5 && angle < 85) {
+    bmpDraw(MAP_NE, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else if (angle >= 85 && angle <= 95) {
+    bmpDraw(MAP_E, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else if (angle > 95 && angle < 175) {
+    bmpDraw(MAP_SE, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else if (angle >= 175 && angle <= 185) {
+    bmpDraw(MAP_S, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else if (angle > 185 && angle < 265) {
+    bmpDraw(MAP_SW, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else if (angle >= 265 && angle <= 275) {
+    bmpDraw(MAP_W, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  } else {
+    bmpDraw(MAP_NW, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  }
+
+  //bmpDraw(imageName, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
 }
 
 // Map Download
