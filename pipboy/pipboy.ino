@@ -67,14 +67,6 @@
 #define ZOOM_WORLD 9
 const char MAP_LOCAL[] = "LOCAL.BMP";
 const char MAP_WORLD[] = "WORLD.BMP";
-const char MAP_N[] = "n.bmp";
-const char MAP_NE[] = "ne.bmp";
-const char MAP_E[] = "e.bmp";
-const char MAP_SE[] = "se.bmp";
-const char MAP_S[] = "s.bmp";
-const char MAP_SW[] = "sw.bmp";
-const char MAP_W[] = "w.bmp";
-const char MAP_NW[] = "nw.bmp";
 
 // PIP Colours
 #define PIP_GREEN 2016
@@ -499,47 +491,49 @@ void loop() {
   }
 
   // Map
-  if (reloadGpsImage) {
-    if (!gps.fix) {
-      if (menuMode) {
-        bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+  if (currentScreen == GPS_SCREEN) {
+    if (reloadGpsImage) {
+      if (!gps.fix) {
+        if (menuMode) {
+          bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+          //drawPosition(map_local_lat.toDouble(), map_local_lon.toDouble(), map_local_lat.toDouble(), map_local_lon.toDouble(), ZOOM_LOCAL, 0);
+        } else {
+          bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+          //drawPosition(map_world_lat.toDouble(), map_world_lon.toDouble(), map_world_lat.toDouble(), map_world_lon.toDouble(), ZOOM_LOCAL, 0);
+        }
       } else {
-        bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+        loc_timer = millis();
+        reloadLocation = true;
       }
-    } else {
+      
+      reloadGpsImage = false;
+    }
+  
+    if (loc_timer > millis())  loc_timer = millis();
+  
+    if (millis() - loc_timer > 15000) {
       loc_timer = millis();
       reloadLocation = true;
     }
-    
-    reloadGpsImage = false;
-  }
-
-  if (loc_timer > millis())  loc_timer = millis();
-
-  if (millis() - loc_timer > 30000) {
-    loc_timer = millis();
-    reloadLocation = true;
-  }
-
-  if (gps_timer > millis())  gps_timer = millis();
-
-  // approximately every 2 seconds or so, print out the current stats
-  if (millis() - gps_timer > 2000) { 
-    gps_timer = millis(); // reset the gps_timer
-
-    if (currentScreen == GPS_SCREEN) {
+  
+    if (gps_timer > millis())  gps_timer = millis();
+  
+    // approximately every 2 seconds or so, print out the current stats
+    if (millis() - gps_timer > 2000) { 
+      gps_timer = millis(); // reset the gps_timer
+  
       // Toolbar
       tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
       
       tft.setTextSize(1);
       tft.setCursor(5, 225);
-
+  
       tft.print(' ');
       tft.print(gps.latitudeDegrees, 4);
       tft.print(", "); 
       tft.print(gps.longitudeDegrees, 4);
       tft.print(' ');
-
+  
       tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
       tft.print(' ');
       tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
@@ -553,7 +547,7 @@ void loop() {
             bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
             drawPosition(map_world_lat.toDouble(), map_world_lon.toDouble(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_WORLD, gps.angle);
           }
-
+  
           reloadLocation = false;
         }
         
@@ -589,14 +583,14 @@ void loop() {
       tft.print(':');
       if (minute < 10) { tft.print('0'); tft.print(minute, DEC); } else { tft.print(minute, DEC); };
       if (pm) { tft.print(" PM "); } else { tft.print(" AM "); };
-
+  
       tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
       tft.print(' ');
-
+  
       // Print Local / World Map
       tft.setCursor(248, 225);
       tft.setTextColor(ILI9340_BLACK, PIP_GREEN_2);
-
+  
       if (menuMode) {
         tft.print(" LOCAL MAP ");
       } else {
@@ -1212,26 +1206,43 @@ void drawPosition(double centreLat, double centreLon, double posLat, double posL
 
   float centreImagePosX = MAP_POS_WIDTH / 2;
   float centreImagePosY = MAP_POS_HEIGHT / 2;
+  
+  int locationX = ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX;
+  int locationY = ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY;
 
-  if (angle >= 355 && angle <= 5) {
-    bmpDraw(MAP_N, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else if (angle > 5 && angle < 85) {
-    bmpDraw(MAP_NE, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else if (angle >= 85 && angle <= 95) {
-    bmpDraw(MAP_E, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else if (angle > 95 && angle < 175) {
-    bmpDraw(MAP_SE, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else if (angle >= 175 && angle <= 185) {
-    bmpDraw(MAP_S, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else if (angle > 185 && angle < 265) {
-    bmpDraw(MAP_SW, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else if (angle >= 265 && angle <= 275) {
-    bmpDraw(MAP_W, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  } else {
-    bmpDraw(MAP_NW, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
-  }
+  float rad = (PI / 180) * angle;
+  int locationRadius = 8;
+  
+  int x0 = locationX;
+  int y0 = locationY - locationRadius * 2;
+  int x1 = locationX - locationRadius;
+  int y1 = locationY + locationRadius;
+  int x2 = locationX + locationRadius;
+  int y2 = locationY + locationRadius;
 
-  //bmpDraw(imageName, ((centreImageX - pixelDistanceX) - centreImagePosX) + MAP_POSX, ((centreImageY - pixelDistanceY) - centreImagePosY) + MAP_POSY);
+  x0 = x0 - locationX;
+  y0 = y0 - locationY;
+  x1 = x1 - locationX;
+  y1 = y1 - locationY;
+  x2 = x2 - locationX;
+  y2 = y2 - locationY;
+
+  int tx0 = (x0 * cos(rad)) - (y0 * sin(rad));
+  int ty0 = (x0 * sin(rad)) + (y0 * cos(rad));
+  int tx1 = (x1 * cos(rad)) - (y1 * sin(rad));
+  int ty1 = (x1 * sin(rad)) + (y1 * cos(rad));
+  int tx2 = (x2 * cos(rad)) - (y2 * sin(rad));
+  int ty2 = (x2 * sin(rad)) + (y2 * cos(rad));
+
+  x0 = tx0 + locationX;
+  y0 = ty0 + locationY;
+  x1 = tx1 + locationX;
+  y1 = ty1 + locationY;
+  x2 = tx2 + locationX;
+  y2 = ty2 + locationY;
+
+  tft.fillTriangle(x0, y0, x1, y1, x2, y2, PIP_GREEN);
+  tft.drawTriangle(x0, y0, x1, y1, x2, y2, ILI9340_BLACK);
 }
 
 // Map Download
@@ -1582,6 +1593,12 @@ void bmpDraw(const char filename[], uint16_t x, uint16_t y) {
             r = sdbuffer[buffidx++];
 
             tft.pushColor(tft.Color565(r,g,b));
+
+            /*if (b < 255 && g < 255 && r < 255) {
+              tft.pushColor(tft.Color565(r,g,b));
+            } else {
+              tft.pushColor(tft.readPixel());
+            }*/
           } // end pixel
         } // end scanline
         Serial.print("Loaded in ");
