@@ -80,8 +80,8 @@ const char MAP_WORLD[] = "WORLD.BMP";
 HardwareSerial *fonaSerial = &Serial2;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 uint8_t fona_type;
-#define AUDIO_OUTPUT FONA_HEADSETAUDIO
-//#define AUDIO_OUTPUT FONA_EXTAUDIO
+//#define AUDIO_OUTPUT FONA_HEADSETAUDIO
+#define AUDIO_OUTPUT FONA_EXTAUDIO
 
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
@@ -96,6 +96,11 @@ String map_world_lon = "";
 // Radio
 #define RADIO_MAXVOL 6
 int radioVolume = 6;
+
+// Timers
+#define GPS_UPDATE 2
+#define LOC_UPDATE 15
+#define STA_UPDATE 30
 
 // Encoder
 Encoder encoder(ENCODER_A, ENCODER_B);
@@ -315,6 +320,8 @@ int menuOffset = 0;
 // GPS Timer
 uint32_t gps_timer = millis();
 uint32_t loc_timer = millis();
+uint32_t status_timer = millis();
+
 bool reloadLocation = true;
 bool reloadGpsImage = true;
 
@@ -511,7 +518,7 @@ void loop() {
   
     if (loc_timer > millis())  loc_timer = millis();
   
-    if (millis() - loc_timer > 15000) {
+    if (millis() - loc_timer > LOC_UPDATE * 1000) {
       loc_timer = millis();
       reloadLocation = true;
     }
@@ -519,7 +526,7 @@ void loop() {
     if (gps_timer > millis())  gps_timer = millis();
   
     // approximately every 2 seconds or so, print out the current stats
-    if (millis() - gps_timer > 2000) { 
+    if (millis() - gps_timer > GPS_UPDATE * 1000) { 
       gps_timer = millis(); // reset the gps_timer
   
       // Toolbar
@@ -598,9 +605,42 @@ void loop() {
       }
     }
   }
+
+  // Status Bar
+  if (status_timer > millis())  status_timer = millis();
+  
+  if (millis() - status_timer > STA_UPDATE * 1000) {
+    // Battery
+    drawBatt(false);
+    
+    status_timer = millis();
+  }
 }
 
 // Helper functions
+
+// Status Bar
+void drawBatt(bool fromScratch) {
+  uint16_t vbat;
+
+  if (!fona.getBattPercent(&vbat)) {
+    Serial.println(F("Failed to read Batt"));
+  } else {
+    Serial.print(F("VPct = ")); Serial.print(vbat); Serial.println(F("%"));
+  
+    int batWidth = round(vbat / 10) * 2;
+
+    if (fromScratch) {
+      tft.drawFastVLine(287, 10, 5, PIP_GREEN);
+      tft.drawFastHLine(287, 10, 3, PIP_GREEN);
+      tft.drawFastHLine(287, 15, 3, PIP_GREEN);
+      tft.drawRect(291, 8, 20, 10, PIP_GREEN);
+    }
+    
+    tft.fillRect(292, 9, 18, 8, ILI9340_BLACK);
+    tft.fillRect(291 + (20 - batWidth), 8, batWidth, 10, PIP_GREEN);
+  }
+}
 
 // Menu Screen
 #define MAX_MENU_OPTIONS 20
@@ -948,6 +988,7 @@ void loadPip(const char screen[], bool mainScreen) {
       noOfSubScreens = 0;
 
       tft.fillScreen(ILI9340_BLACK);
+      drawBatt(true);
     }
 
     while (pip.available()) {
