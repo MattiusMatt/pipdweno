@@ -136,6 +136,8 @@ void setup() {
 
   loadMapCentres();
 
+  randomSeed(millis());
+
   /*if (!fona.sendSMS("07734264377", "PipBoy Booted!")) {
     Serial.println(F("Failed"));
   } else {
@@ -376,7 +378,12 @@ void loop() {
     drawSubScreen(currentSubScreen, true);
 
     play("tab.wav");
-    play("static0.wav");
+
+    int playStatic = random(3);
+
+    if (playStatic == 0) {
+      play("static0.wav");
+    }
 
     // Reset Menu Option
     currentMenuOption = 0;
