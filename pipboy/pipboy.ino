@@ -219,10 +219,8 @@ bool enableAudio() {
   Serial.println(F("Initialising Audio"));
   
   audio.speakerPin = AUDIO_TMR;
-  audio.setVolume(5);
-
-  // Test Audio
-  //play("1.wav");
+  audio.setVolume(6);
+  audio.quality(1);
 
   return true;
 }
@@ -377,6 +375,9 @@ void loop() {
     encoder.write(0);
     drawSubScreen(currentSubScreen, true);
 
+    play("tab.wav");
+    play("static0.wav");
+
     // Reset Menu Option
     currentMenuOption = 0;
     menuOffset = 0;
@@ -441,6 +442,8 @@ void loop() {
 
     int newSubScreen = drawSubScreen(newEncoderValue, false);
 
+    play("tab.wav");
+
     if (newSubScreen != currentSubScreen) {
       currentSubScreen = newSubScreen;
       currentMenuOption = 0;
@@ -461,6 +464,8 @@ void loop() {
     Serial.println(newEncoderValue);
 
     int newMenu = updateMenuOptions(newEncoderValue, currentMenuOption);
+
+    play("scroll.wav");
 
     currentMenuOption = newMenu;
     renderSubMenu(newMenu);
@@ -924,8 +929,8 @@ int drawSubScreen(int current, bool force) {
 }
 
 //Sound
-void play(char *file) {
-  audio.play(file);
+void play(const char file[]) {
+  audio.play((char *)file);
 
   while (audio.isPlaying()) {
   }
