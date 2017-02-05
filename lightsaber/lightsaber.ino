@@ -1,11 +1,26 @@
 #include <SoftwareSerial.h>
 #include "Adafruit_Soundboard.h"
 
+// RGB Properties
+#define LED_R 9
+#define LED_G 10
+#define LED_B 11
+
 // Sound Properties
 #define SFX_TX 5
 #define SFX_RX 6
 #define SFX_RST 4
 #define SFX_ACT 7
+
+// Fonts
+#define SND_ON 0
+#define SND_HUM 1
+#define SND_CLASH_0 2
+#define SND_CLASH_1 3
+#define SND_CLASH_2 4
+#define SND_SWING_0 5
+#define SND_SWING_1 6
+#define SND_SWING_2 7
 
 SoftwareSerial audioSerial = SoftwareSerial(SFX_TX, SFX_RX);
 Adafruit_Soundboard sfx = Adafruit_Soundboard(&audioSerial, NULL, SFX_RST);
@@ -17,6 +32,9 @@ Adafruit_Soundboard sfx = Adafruit_Soundboard(&audioSerial, NULL, SFX_RST);
 
 #define SWING_TOL 50
 #define CLASH_TOL 170
+
+#define SWING_DEL 0.5
+#define CLASH_DEL 0.5
 
 // Main App
 void setup() {
@@ -32,16 +50,54 @@ void setup() {
     Serial.println("Audio not found");
     while (1);
   }
+
+  // LED Reset
+  analogWrite(LED_R, 0);
+  analogWrite(LED_G, 0);
+  analogWrite(LED_B, 0);
+
+  // TEMP
+  analogWrite(LED_R, 50);
+  analogWrite(LED_G, 50);
+  analogWrite(LED_B, 50);
+  // TEMP
+
+  // Sound On
+  delay(1000);
+  Serial.println("Boot");
+  playAudio(SND_ON);
 }
 
-bool processingMovement = false;
+bool processingSwing = false;
+bool processingClash = false;
+uint32_t swing_detected = millis();
+uint32_t clash_detected = millis();
 
 void loop() {
   processMovement();
 
-  loopAudio(4);
+  if (processingSwing && (millis() - swing_detected) > (SWING_DEL * 1000)) {
+    processingSwing = false;
+  }
 
-  delay(100);
+  if (processingClash && (millis() - clash_detected) > (CLASH_DEL * 1000)) {
+    processingClash = false;
+  }
+
+  if (!processingSwing && !processingClash) {
+    loopAudio(SND_HUM);
+  }
+
+  delay(10);
+
+  // TEMP
+  //Serial.println("LED High");
+  //analogWrite(LED_R, 150);
+  //delay(3000);
+  //analogWrite(LED_R, 0);
+  //Serial.println("LED Low");
+  //delay(3000);
+  // TEMP
 }
 
 // Accelerometer
@@ -98,27 +154,33 @@ bool detectMovement(int x_diff, int y_diff, int z_diff, int tolerence) {
 }
 
 void swing() {
-  if (!processingMovement) {
+  if (!processingSwing && !processingClash) {
     Serial.println("Swing detected");
+    swing_detected = millis();
     
-    processingMovement = true;
+    processingSwing = true;
+
+    int swing = random(SND_SWING_0, SND_SWING_2 + 1);
     
-    playAudio(0);
+    Serial.print("Swing ");
+    Serial.println(swing);
+    playAudio(swing);
   }
-  
-  delay(500);
 }
 
 void clash() {
-  if (!processingMovement) {
+  if (!processingClash) {
     Serial.println("Clash detected");
+    clash_detected = millis();
     
-    processingMovement = true;
+    processingClash = true;
+
+    int clash = random(SND_CLASH_0, SND_CLASH_2 + 1);
     
-    playAudio(1);
+    Serial.print("Clash ");
+    Serial.println(clash);
+    playAudio(clash);
   }
-  
-  delay(1000);
 }
 
 // Sound
@@ -145,8 +207,7 @@ void stopAudio() {
 
 void loopAudio(uint8_t track) {
   if (!audioPlaying()) {
-    processingMovement = false;
-    //playAudio(track);
+    playAudio(track);
   }
 }
 
