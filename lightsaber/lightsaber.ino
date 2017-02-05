@@ -2,9 +2,16 @@
 #include "Adafruit_Soundboard.h"
 
 // RGB Properties
-#define LED_R 9
-#define LED_G 10
-#define LED_B 11
+#define LED_R_PIN 9
+#define LED_G_PIN 10
+#define LED_B_PIN 11
+#define LED_R_MAX 255
+#define LED_G_MAX 255
+#define LED_B_MAX 255
+#define LED_R 200
+#define LED_G 0
+#define LED_B 0
+#define LED_CLASH_DELAY 1
 
 // Sound Properties
 #define SFX_TX 5
@@ -34,7 +41,7 @@ Adafruit_Soundboard sfx = Adafruit_Soundboard(&audioSerial, NULL, SFX_RST);
 #define CLASH_TOL 170
 
 #define SWING_DEL 0.5
-#define CLASH_DEL 0.5
+#define CLASH_DEL 1
 
 // Main App
 void setup() {
@@ -52,20 +59,19 @@ void setup() {
   }
 
   // LED Reset
-  analogWrite(LED_R, 0);
-  analogWrite(LED_G, 0);
-  analogWrite(LED_B, 0);
+  analogWrite(LED_R_PIN, 0);
+  analogWrite(LED_G_PIN, 0);
+  analogWrite(LED_B_PIN, 0);
 
-  // TEMP
-  analogWrite(LED_R, 50);
-  analogWrite(LED_G, 50);
-  analogWrite(LED_B, 50);
-  // TEMP
+  // LED Colours
+  analogWrite(LED_R_PIN, LED_R);
+  analogWrite(LED_G_PIN, LED_G);
+  analogWrite(LED_B_PIN, LED_B);
 
   // Sound On
-  delay(1000);
   Serial.println("Boot");
   playAudio(SND_ON);
+  delay(500);
 }
 
 bool processingSwing = false;
@@ -89,15 +95,6 @@ void loop() {
   }
 
   delay(10);
-
-  // TEMP
-  //Serial.println("LED High");
-  //analogWrite(LED_R, 150);
-  //delay(3000);
-  //analogWrite(LED_R, 0);
-  //Serial.println("LED Low");
-  //delay(3000);
-  // TEMP
 }
 
 // Accelerometer
@@ -164,6 +161,7 @@ void swing() {
     
     Serial.print("Swing ");
     Serial.println(swing);
+    
     playAudio(swing);
   }
 }
@@ -179,6 +177,17 @@ void clash() {
     
     Serial.print("Clash ");
     Serial.println(clash);
+
+    analogWrite(LED_R_PIN, LED_R_MAX);
+    analogWrite(LED_G_PIN, LED_G_MAX);
+    analogWrite(LED_B_PIN, LED_B_MAX);
+
+    delay(LED_CLASH_DELAY * 1000);
+
+    analogWrite(LED_R_PIN, LED_R);
+    analogWrite(LED_G_PIN, LED_G);
+    analogWrite(LED_B_PIN, LED_B);
+    
     playAudio(clash);
   }
 }
