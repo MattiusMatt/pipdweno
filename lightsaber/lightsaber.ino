@@ -8,10 +8,10 @@
 #define LED_R_MAX 255
 #define LED_G_MAX 255
 #define LED_B_MAX 255
-#define LED_R 200
-#define LED_G 0
+#define LED_R 0
+#define LED_G 200
 #define LED_B 0
-#define LED_CLASH_DELAY 1
+#define LED_CLASH_DELAY 0.2
 
 // Sound Properties
 #define SFX_TX 5
@@ -182,13 +182,13 @@ void clash() {
     analogWrite(LED_G_PIN, LED_G_MAX);
     analogWrite(LED_B_PIN, LED_B_MAX);
 
+    playAudio(clash);
+
     delay(LED_CLASH_DELAY * 1000);
 
     analogWrite(LED_R_PIN, LED_R);
     analogWrite(LED_G_PIN, LED_G);
     analogWrite(LED_B_PIN, LED_B);
-    
-    playAudio(clash);
   }
 }
 
