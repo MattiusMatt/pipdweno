@@ -8,8 +8,8 @@
 #define LED_R_MAX 255
 #define LED_G_MAX 255
 #define LED_B_MAX 255
-#define LED_R 0
-#define LED_G 200
+#define LED_R 255
+#define LED_G 255
 #define LED_B 0
 #define LED_CLASH_DELAY 0.2
 
