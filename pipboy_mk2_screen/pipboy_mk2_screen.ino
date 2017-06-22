@@ -123,48 +123,84 @@ void runLoadSequence() {
 
 // Running
 
+// Screens
 int currentScreen = -1;
-long currentSubScreen = 0;
+int currentSubScreen = -1;
+
+// Current Menu Option
+long currentMenuOption = 0;
 int menuOffset = 0;
 
 void loop() {  
   // Serial control
   if (Serial.available()) {
     switch(Serial.read()){
-      case '1':
+      case 'm':
+        loadMainPip();
+        break;
+
+      case 's':
+        loadSubPip();
+        break;
+    }
+
+    delay(1000);
+  }
+}
+
+void loadSubPip() {
+  int subScreen = -1;
+
+  while (subScreen == -1) {
+    subScreen = Serial.read();
+  }
+
+  drawSubScreen(subScreen, false);
+
+  currentSubScreen = subScreen;
+}
+
+void loadMainPip() {
+  int screen = -1;
+
+  while (screen == -1) {
+    screen = Serial.read();
+  }
+  
+  switch(screen) {
+      case '0':
         loadPip(PIP_0, true);
-        drawSubScreen(currentSubScreen, true);
-        loadMenuData(0);
+        currentScreen = 0;
+        break;
+
+      case '1':
+        loadPip(PIP_1, true);
         currentScreen = 1;
         break;
 
       case '2':
-        loadPip(PIP_1, true);
-        drawSubScreen(currentSubScreen, true);
-        loadMenuData(0);
+        loadPip(PIP_2, true);
         currentScreen = 2;
         break;
 
       case '3':
-        loadPip(PIP_2, true);
-        drawSubScreen(currentSubScreen, true);
-        loadMenuData(0);
+        loadPip(PIP_3, true);
         currentScreen = 3;
         break;
 
       case '4':
-        loadPip(PIP_3, true);
-        drawSubScreen(currentSubScreen, true);
+        loadPip(PIP_4, true);
         currentScreen = 4;
         break;
-
-      case '5':
-        loadPip(PIP_4, true);
-        drawSubScreen(currentSubScreen, true);
-        currentScreen = 5;
-        break;
     }
-  }
+
+    // Reset Sub Screen
+    drawSubScreen(0, true);
+    currentSubScreen = 0;
+
+    // Reset Menu Option
+    currentMenuOption = 0;
+    menuOffset = 0;
 }
 
 // Helper functions
@@ -401,13 +437,6 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
 }
 
 int drawSubScreen(int current, bool force) {
-  if (current < 0) { current = 0; }
-  if (current > noOfSubScreens - 1) { current = noOfSubScreens - 1; }
-  
-  if (!force && currentSubScreen == current) {
-    return current;
-  }
-
   //Serial.print("Loading Sub Screen: ");
   //Serial.println(current);
 
@@ -470,9 +499,9 @@ int drawSubScreen(int current, bool force) {
 void loadPip(const char screen[], bool mainScreen) {
   File pip = SD.open(screen);
 
-  //Serial.println();
-  //Serial.print("Loading PIP: ");
-  //Serial.print(screen);
+  Serial.println();
+  Serial.print("Loading PIP: ");
+  Serial.print(screen);
   
   if (pip) {
     if (mainScreen) {
@@ -688,14 +717,15 @@ void bmpDraw(const char filename[], uint16_t x, uint16_t y) {
 
   if((x >= tft.width()) || (y >= tft.height())) return;
 
-  //Serial.println();
-  //Serial.print("Loading image '");
-  //Serial.print(filename);
-  //Serial.println('\'');
+  Serial.println();
+  Serial.print("Loading image '");
+  Serial.print(filename);
+  Serial.println('\'');
 
   // Open requested file on SD card
   if ((bmpFile = SD.open(filename)) == 0) {
-    Serial.print("File not found");
+    Serial.print("File not found ");
+    Serial.print(filename);
     return;
   }
 

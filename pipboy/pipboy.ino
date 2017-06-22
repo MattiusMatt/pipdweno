@@ -5,7 +5,7 @@
 #include <gfxfont.h>
 #include <SPI.h>
 #include <SD.h>
-#include <TMRpcm.h>
+//#include <TMRpcm.h>
 #include <Encoder.h>
 #include <Wire.h>
 
@@ -29,13 +29,14 @@
 #define FONA_RST 5
 
 // TFT Pins
+// Teensy: 11 = MOSI, 12 = MISO, 13 = SCK0
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
-#define TFT_RST 8
-#define TFT_DC 9
-#define TFT_CS 12
+#define TFT_DC 24
+#define TFT_RST 25
+#define TFT_CS 26
 
 // SD Pin
-#define SD_CS 4
+#define SD_CS 27
 
 // GPS
 #define GPS_SCREEN 3
@@ -86,6 +87,13 @@ uint8_t fona_type;
 // TFT
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
+// Pip Screens
+const char PIP_0[] = "0.pip";
+const char PIP_1[] = "1.pip";
+const char PIP_2[] = "2.pip";
+const char PIP_3[] = "3.pip";
+const char PIP_4[] = "4.pip";
+
 // GPS
 Adafruit_GPS gps(&Serial3);
 String map_local_lat = "";
@@ -106,7 +114,7 @@ int radioVolume = 6;
 Encoder encoder(ENCODER_A, ENCODER_B);
 
 // Sound
-TMRpcm audio;
+//TMRpcm audio;
 
 // Initialisation
 
@@ -116,13 +124,13 @@ void setup() {
 
   if (!enableSD()) { return; }
 
-  if (!enableFona()) { return; }
+  //if (!enableFona()) { return; }
 
-  if (!enableAudio()) { return; }
+  //if (!enableAudio()) { return; }
 
-  if (!enableGPS()) { return; }
+  //if (!enableGPS()) { return; }
 
-  if (!enableRadio()) { return; }
+  //if (!enableRadio()) { return; }
 
   if (!enableTFT()) { return; }
 
@@ -217,7 +225,7 @@ bool enableFona() {
   return true;
 }
 
-bool enableAudio() {
+/*bool enableAudio() {
   Serial.println(F("Initialising Audio"));
   
   audio.speakerPin = AUDIO_TMR;
@@ -225,19 +233,19 @@ bool enableAudio() {
   audio.quality(1);
 
   return true;
-}
+}*/
 
 bool enableGPS() {
   Serial.println(F("Initialising GPS"));
   
-  gps.begin(9600);
+  /*gps.begin(9600);
   gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
   gps.sendCommand(PGCMD_ANTENNA);
 
   // GPS Interupt
   OCR0A = 0xAF;
-  TIMSK0 |= _BV(OCIE0A);
+  TIMSK0 |= _BV(OCIE0A);*/
 
   return true;
 }
@@ -289,7 +297,7 @@ void runLoadSequence() {
 // Running
 
 // GPS Interupt
-SIGNAL(TIMER0_COMPA_vect) {
+/*SIGNAL(TIMER0_COMPA_vect) {
   char c = gps.read();
   
   if (GPS_ECHO)
@@ -298,7 +306,7 @@ SIGNAL(TIMER0_COMPA_vect) {
     // writing direct to UDR0 is much much faster than Serial.print 
     // but only one character can be written at a time. 
   }
-}
+}*/
 
 // Serial Vars
 bool writePipMode = false;
@@ -338,26 +346,26 @@ void loop() {
     
     switch(newScreen){
       case 0:
-        loadPip("0.pip", true);
+        loadPip(PIP_0, true);
         break;
         
       case 1:
-        loadPip("1.pip", true);
+        loadPip(PIP_1, true);
         break;
         
       case 2:
-        loadPip("2.pip", true);
+        loadPip(PIP_2, true);
         break;
         
       case 3:
-        loadPip("3.pip", true);
+        loadPip(PIP_3, true);
 
         reloadGpsImage = true;
         
         break;
         
       case 4:
-        loadPip("4.pip", true);
+        loadPip(PIP_4, true);
 
         // Radio
         fona.FMradio(true, AUDIO_OUTPUT);
@@ -377,13 +385,13 @@ void loop() {
     encoder.write(0);
     drawSubScreen(currentSubScreen, true);
 
-    play("tab.wav");
+    //play("tab.wav");
 
-    int playStatic = random(3);
+    /*int playStatic = random(3);
 
     if (playStatic == 0) {
       play("static0.wav");
-    }
+    }*/
 
     // Reset Menu Option
     currentMenuOption = 0;
@@ -449,7 +457,7 @@ void loop() {
 
     int newSubScreen = drawSubScreen(newEncoderValue, false);
 
-    play("tab.wav");
+    //play("tab.wav");
 
     if (newSubScreen != currentSubScreen) {
       currentSubScreen = newSubScreen;
@@ -472,7 +480,7 @@ void loop() {
 
     int newMenu = updateMenuOptions(newEncoderValue, currentMenuOption);
 
-    play("scroll.wav");
+    //play("scroll.wav");
 
     currentMenuOption = newMenu;
     renderSubMenu(newMenu);
@@ -561,10 +569,10 @@ void loop() {
         if (reloadLocation) {
           if (menuMode) {
             bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
-            drawPosition(map_local_lat.toDouble(), map_local_lon.toDouble(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_LOCAL, gps.angle);
+            drawPosition(map_local_lat.toFloat(), map_local_lon.toFloat(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_LOCAL, gps.angle);
           } else {
             bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
-            drawPosition(map_world_lat.toDouble(), map_world_lon.toDouble(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_WORLD, gps.angle);
+            drawPosition(map_world_lat.toFloat(), map_world_lon.toFloat(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_WORLD, gps.angle);
           }
   
           reloadLocation = false;
@@ -936,14 +944,14 @@ int drawSubScreen(int current, bool force) {
 }
 
 //Sound
-void play(const char file[]) {
+/*void play(const char file[]) {
   audio.play((char *)file);
 
   while (audio.isPlaying()) {
   }
 
   audio.disable();
-}
+}*/
 
 int readMainSwitch() {
   int sensorValue = analogRead(A7);
