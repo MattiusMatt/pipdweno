@@ -120,7 +120,7 @@ Encoder encoder(ENCODER_A, ENCODER_B);
 
 void setup() {
   // Debug using serial
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   if (!enableSD()) { return; }
 
@@ -342,61 +342,7 @@ void loop() {
 
     newScreen = readMainSwitch();
 
-    fona.FMradio(false);
-    
-    switch(newScreen){
-      case 0:
-        loadPip(PIP_0, true);
-        break;
-        
-      case 1:
-        loadPip(PIP_1, true);
-        break;
-        
-      case 2:
-        loadPip(PIP_2, true);
-        break;
-        
-      case 3:
-        loadPip(PIP_3, true);
-
-        reloadGpsImage = true;
-        
-        break;
-        
-      case 4:
-        loadPip(PIP_4, true);
-
-        // Radio
-        fona.FMradio(true, AUDIO_OUTPUT);
-        loadMenuData(0);
-        
-        break;
-    }
-    
-    currentScreen = newScreen;
-
-    if (currentScreen == GPS_SCREEN) {
-      tft.fillRect(5, 225, 310, 8, PIP_GREEN_3);
-    }
-
-    // Reset Sub Screen
-    currentSubScreen = 0;
-    encoder.write(0);
-    drawSubScreen(currentSubScreen, true);
-
-    //play("tab.wav");
-
-    /*int playStatic = random(3);
-
-    if (playStatic == 0) {
-      play("static0.wav");
-    }*/
-
-    // Reset Menu Option
-    currentMenuOption = 0;
-    menuOffset = 0;
-    menuMode = false;
+    //loadScreenMain(newScreen);
   }
 
   // Button Control
@@ -499,26 +445,43 @@ void loop() {
     }
   } else {
     if (Serial.available()) {
-      switch(Serial.read()){
+      Serial.println(F("Serial Available"));
+  
+      char character = Serial.read();
+  
+      Serial.print(F("Char: "));
+      Serial.println(character);
+      
+      switch(character){
         case 'u':
           writePipMode = !writePip(false);
           break;
+  
+        case 'm':
+          character = Serial.read();
+          loadScreenMain(character - '0');
+          break;
+  
+        //case 's':
+          //loadSubPip();
+          //break;
           
         default:
+          delay(500);
           break;
       }
     }
   }
 
   // GPS
-  if (gps.newNMEAreceived()) {
+  /*if (gps.newNMEAreceived()) {
     if (!gps.parse(gps.lastNMEA())) {
       return;
     }
-  }
+  }*/
 
   // Map
-  if (currentScreen == GPS_SCREEN) {
+  /*if (currentScreen == GPS_SCREEN) {
     if (reloadGpsImage) {
       if (!gps.fix) {
         if (menuMode) {
@@ -624,20 +587,86 @@ void loop() {
         tft.print(" WORLD MAP ");
       }
     }
-  }
+  }*/
 
   // Status Bar
-  if (status_timer > millis())  status_timer = millis();
+  /*if (status_timer > millis())  status_timer = millis();
   
   if (millis() - status_timer > STA_UPDATE * 1000) {
     // Battery
     drawBatt(false);
     
     status_timer = millis();
-  }
+  }*/
 }
 
 // Helper functions
+
+// Screen Functions
+void loadScreenMain(int newScreen) {
+  Serial.print(F("Main Screen: "));
+  Serial.println(newScreen);
+  
+  //fona.FMradio(false);
+    
+  switch(newScreen) {
+    case 0:
+      loadPip(PIP_0, true);
+      break;
+      
+    case 1:
+      loadPip(PIP_1, true);
+      break;
+      
+    case 2:
+      loadPip(PIP_2, true);
+      break;
+      
+    case 3:
+      loadPip(PIP_3, true);
+
+      reloadGpsImage = true;
+      
+      break;
+      
+    case 4:
+      loadPip(PIP_4, true);
+
+      // Radio
+      fona.FMradio(true, AUDIO_OUTPUT);
+      loadMenuData(0);
+      
+      break;
+
+    default:
+      Serial.println("Unknown Screen");
+      break;
+  }
+  
+  currentScreen = newScreen;
+
+  if (currentScreen == GPS_SCREEN) {
+    tft.fillRect(5, 225, 310, 8, PIP_GREEN_3);
+  }
+
+  // Reset Sub Screen
+  currentSubScreen = 0;
+  encoder.write(0);
+  drawSubScreen(currentSubScreen, true);
+
+  //play("tab.wav");
+
+  /*int playStatic = random(3);
+
+  if (playStatic == 0) {
+    play("static0.wav");
+  }*/
+
+  // Reset Menu Option
+  currentMenuOption = 0;
+  menuOffset = 0;
+  menuMode = false;
+}
 
 // Status Bar
 void drawBatt(bool fromScratch) {
@@ -1008,7 +1037,7 @@ void loadPip(const char screen[], bool mainScreen) {
       noOfSubScreens = 0;
 
       tft.fillScreen(ILI9340_BLACK);
-      drawBatt(true);
+      //drawBatt(true);
     }
 
     while (pip.available()) {
