@@ -15,6 +15,14 @@
     #define F(string_literal) string_literal
 #endif
 
+// Functionality
+#define ENABLE_ROTARY_SWITCH false
+#define ENABLE_ROTARY_ENCODER false
+#define ENABLE_FONA false
+#define ENABLE_GPS false
+#define ENABLE_AUDIO false
+#define ENABLE_RADIO false
+
 // ASCII Consts
 #define ASCII_CR 13
 #define ASCII_LF 10
@@ -124,13 +132,21 @@ void setup() {
 
   if (!enableSD()) { return; }
 
-  //if (!enableFona()) { return; }
+  if (ENABLE_FONA) {
+    if (!enableFona()) { return; }
+  }
 
-  //if (!enableAudio()) { return; }
+  if (ENABLE_AUDIO) {
+    if (!enableAudio()) { return; }
+  }
 
-  //if (!enableGPS()) { return; }
+  if (ENABLE_GPS) {
+    if (!enableGPS()) { return; }
+  }
 
-  //if (!enableRadio()) { return; }
+  if (ENABLE_RADIO) {
+    if (!enableRadio()) { return; }
+  }
 
   if (!enableTFT()) { return; }
 
@@ -225,27 +241,27 @@ bool enableFona() {
   return true;
 }
 
-/*bool enableAudio() {
+bool enableAudio() {
   Serial.println(F("Initialising Audio"));
   
-  audio.speakerPin = AUDIO_TMR;
-  audio.setVolume(6);
-  audio.quality(1);
+  //audio.speakerPin = AUDIO_TMR;
+  //audio.setVolume(6);
+  //audio.quality(1);
 
   return true;
-}*/
+}
 
 bool enableGPS() {
   Serial.println(F("Initialising GPS"));
   
-  /*gps.begin(9600);
+  gps.begin(9600);
   gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
   gps.sendCommand(PGCMD_ANTENNA);
 
   // GPS Interupt
-  OCR0A = 0xAF;
-  TIMSK0 |= _BV(OCIE0A);*/
+  //OCR0A = 0xAF;
+  //TIMSK0 |= _BV(OCIE0A);
 
   return true;
 }
@@ -335,104 +351,89 @@ bool reloadGpsImage = true;
 
 void loop() {
   // Main Screen
-  int newScreen = readMainSwitch();
-
-  if (newScreen != currentScreen) {
-    delay(500);
-
-    newScreen = readMainSwitch();
-
-    //loadScreenMain(newScreen);
+  if (ENABLE_ROTARY_SWITCH) {
+    int newScreen = readMainSwitch();
+  
+    if (newScreen != currentScreen) {
+      delay(500);
+  
+      newScreen = readMainSwitch();
+  
+      loadScreenMain(newScreen);
+    }
   }
 
   // Button Control
-  int buttonVal = digitalRead(BUTTON_ONE);
-
-  if (buttonVal == LOW) {
-    delay(10);
-    buttonVal = digitalRead(BUTTON_ONE);
-
-    if (buttonVal == LOW && currentScreen == MAP_SCREEN && gps.fix) {
-      if (menuMode) {
-        downloadMap(true, "53.5049", "-2.0154");
-      } else {
-        downloadMap(false, "53.5049", "-2.0154");
+  if (ENABLE_ROTARY_ENCODER) {
+    int buttonVal = digitalRead(BUTTON_ONE);
+  
+    if (buttonVal == LOW) {
+      delay(10);
+      buttonVal = digitalRead(BUTTON_ONE);
+  
+      if (buttonVal == LOW && currentScreen == MAP_SCREEN && gps.fix) {
+        if (menuMode) {
+          downloadMap(true, "53.5049", "-2.0154");
+        } else {
+          downloadMap(false, "53.5049", "-2.0154");
+        }
       }
     }
-  }
-
-  // Menu Mode Toggle
-  int val = digitalRead(ENCODER_BUTTON);
-
-  if (val != previousButtonValue) {
-    delay(10);
-    val = digitalRead(ENCODER_BUTTON);
     
-    if (val == LOW) {
-      menuMode = !menuMode;
-
-      if (!menuMode) {
-        Serial.print("Flange: ");
-        Serial.println(currentSubScreen);
-        encoder.write(currentSubScreen * 2);
-      } else {
-        encoder.write(currentMenuOption * 2);
+    // Menu Mode Toggle
+    int val = digitalRead(ENCODER_BUTTON);
+  
+    if (val != previousButtonValue) {
+      delay(10);
+      val = digitalRead(ENCODER_BUTTON);
+      
+      if (val == LOW) {
+        menuMode = !menuMode;
+  
+        if (!menuMode) {
+          Serial.print("Flange: ");
+          Serial.println(currentSubScreen);
+          encoder.write(currentSubScreen * 2);
+        } else {
+          encoder.write(currentMenuOption * 2);
+        }
+  
+        Serial.print("Menu Mode: ");
+        Serial.println(menuMode);
+  
+        // Toggle local / world map
+        reloadGpsImage = true;
       }
-
-      Serial.print("Menu Mode: ");
-      Serial.println(menuMode);
-
-      // Toggle local / world map
-      reloadGpsImage = true;
+  
+      previousButtonValue = val;
     }
 
-    previousButtonValue = val;
-  }
-
-  // Sub Screen
-  long newEncoderValue = encoder.read() / 2;
-
-  if (!menuMode && newEncoderValue != currentSubScreen) {
-    delay(500);
-
-    newEncoderValue = encoder.read() / 2;
-
-    Serial.println();
-    Serial.print("New Encoder Value: ");
-    Serial.println(newEncoderValue);
-
-    int newSubScreen = drawSubScreen(newEncoderValue, false);
-
-    //play("tab.wav");
-
-    if (newSubScreen != currentSubScreen) {
-      currentSubScreen = newSubScreen;
-      currentMenuOption = 0;
-      renderSubMenu(currentMenuOption);
-    } else {
-      encoder.write(newSubScreen * 2);
+    // Sub Screen
+    long newEncoderValue = encoder.read() / 2;
+  
+    if (!menuMode && newEncoderValue != currentSubScreen) {
+      delay(500);
+  
+      newEncoderValue = encoder.read() / 2;
+  
+      Serial.println();
+      Serial.print("New Encoder Value: ");
+      Serial.println(newEncoderValue);
+  
+      loadScreenSub(newEncoderValue);
     }
-  }
-
-  // Menu
-  if (menuMode && newEncoderValue != currentMenuOption) {
-    delay(500);
-
-    newEncoderValue = encoder.read() / 2;
-
-    Serial.println();
-    Serial.print("New Encoder Value: ");
-    Serial.println(newEncoderValue);
-
-    int newMenu = updateMenuOptions(newEncoderValue, currentMenuOption);
-
-    //play("scroll.wav");
-
-    currentMenuOption = newMenu;
-    renderSubMenu(newMenu);
     
-    if (newMenu != newEncoderValue) {
-      encoder.write(newMenu * 2);
+    // Menu
+    if (menuMode && newEncoderValue != currentMenuOption) {
+      delay(500);
+  
+      newEncoderValue = encoder.read() / 2;
+  
+      Serial.println();
+      Serial.print("New Encoder Value: ");
+      Serial.println(newEncoderValue);
+  
+      loadScreenMenu(newEncoderValue);
     }
   }
   
@@ -462,9 +463,18 @@ void loop() {
           loadScreenMain(character - '0');
           break;
   
-        //case 's':
-          //loadSubPip();
-          //break;
+        case 's':
+          character = Serial.read();
+          loadScreenSub(character - '0');
+          break;
+
+        case '[':
+          loadScreenMenu(currentMenuOption - 1);
+          break;
+
+        case ']':
+          loadScreenMenu(currentMenuOption + 1);
+          break;
           
         default:
           delay(500);
@@ -474,120 +484,122 @@ void loop() {
   }
 
   // GPS
-  /*if (gps.newNMEAreceived()) {
-    if (!gps.parse(gps.lastNMEA())) {
-      return;
+  if (ENABLE_GPS) {
+    if (gps.newNMEAreceived()) {
+      if (!gps.parse(gps.lastNMEA())) {
+        return;
+      }
     }
-  }*/
-
-  // Map
-  /*if (currentScreen == GPS_SCREEN) {
-    if (reloadGpsImage) {
-      if (!gps.fix) {
-        if (menuMode) {
-          bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
-          //drawPosition(map_local_lat.toDouble(), map_local_lon.toDouble(), map_local_lat.toDouble(), map_local_lon.toDouble(), ZOOM_LOCAL, 0);
+    
+    // Map
+    if (currentScreen == GPS_SCREEN) {
+      if (reloadGpsImage) {
+        if (!gps.fix) {
+          if (menuMode) {
+            bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+            //drawPosition(map_local_lat.toDouble(), map_local_lon.toDouble(), map_local_lat.toDouble(), map_local_lon.toDouble(), ZOOM_LOCAL, 0);
+          } else {
+            bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+            //drawPosition(map_world_lat.toDouble(), map_world_lon.toDouble(), map_world_lat.toDouble(), map_world_lon.toDouble(), ZOOM_LOCAL, 0);
+          }
         } else {
-          bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
-          //drawPosition(map_world_lat.toDouble(), map_world_lon.toDouble(), map_world_lat.toDouble(), map_world_lon.toDouble(), ZOOM_LOCAL, 0);
+          loc_timer = millis();
+          reloadLocation = true;
         }
-      } else {
+        
+        reloadGpsImage = false;
+      }
+    
+      if (loc_timer > millis())  loc_timer = millis();
+    
+      if (millis() - loc_timer > LOC_UPDATE * 1000) {
         loc_timer = millis();
         reloadLocation = true;
       }
-      
-      reloadGpsImage = false;
-    }
-  
-    if (loc_timer > millis())  loc_timer = millis();
-  
-    if (millis() - loc_timer > LOC_UPDATE * 1000) {
-      loc_timer = millis();
-      reloadLocation = true;
-    }
-  
-    if (gps_timer > millis())  gps_timer = millis();
-  
-    // approximately every 2 seconds or so, print out the current stats
-    if (millis() - gps_timer > GPS_UPDATE * 1000) { 
-      gps_timer = millis(); // reset the gps_timer
-  
-      // Toolbar
-      tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
-      
-      tft.setTextSize(1);
-      tft.setCursor(5, 225);
-  
-      tft.print(' ');
-      tft.print(gps.latitudeDegrees, 4);
-      tft.print(", "); 
-      tft.print(gps.longitudeDegrees, 4);
-      tft.print(' ');
-  
-      tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
-      tft.print(' ');
-      tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
-      
-      if (gps.fix) {
-        if (reloadLocation) {
-          if (menuMode) {
-            bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
-            drawPosition(map_local_lat.toFloat(), map_local_lon.toFloat(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_LOCAL, gps.angle);
-          } else {
-            bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
-            drawPosition(map_world_lat.toFloat(), map_world_lon.toFloat(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_WORLD, gps.angle);
+    
+      if (gps_timer > millis())  gps_timer = millis();
+    
+      // approximately every 2 seconds or so, print out the current stats
+      if (millis() - gps_timer > GPS_UPDATE * 1000) { 
+        gps_timer = millis(); // reset the gps_timer
+    
+        // Toolbar
+        tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
+        
+        tft.setTextSize(1);
+        tft.setCursor(5, 225);
+    
+        tft.print(' ');
+        tft.print(gps.latitudeDegrees, 4);
+        tft.print(", "); 
+        tft.print(gps.longitudeDegrees, 4);
+        tft.print(' ');
+    
+        tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+        tft.print(' ');
+        tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
+        
+        if (gps.fix) {
+          if (reloadLocation) {
+            if (menuMode) {
+              bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+              drawPosition(map_local_lat.toFloat(), map_local_lon.toFloat(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_LOCAL, gps.angle);
+            } else {
+              bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+              drawPosition(map_world_lat.toFloat(), map_world_lon.toFloat(), gps.latitudeDegrees, gps.longitudeDegrees, ZOOM_WORLD, gps.angle);
+            }
+    
+            reloadLocation = false;
           }
-  
-          reloadLocation = false;
+          
+          Serial.print("Fix: "); Serial.print((int)gps.fix);
+          Serial.print(" quality: "); Serial.println((int)gps.fixquality);
+          Serial.print("Location: ");
+          Serial.print(gps.latitude, 4); Serial.print(gps.lat);
+          Serial.print(", "); 
+          Serial.print(gps.longitude, 4); Serial.println(gps.lon);
+          Serial.print("Location (in degrees, works with Google Maps): ");
+          Serial.print(gps.latitudeDegrees, 4);
+          Serial.print(", "); 
+          Serial.println(gps.longitudeDegrees, 4);
+          
+          Serial.print("Speed (knots): "); Serial.println(gps.speed);
+          Serial.print("Angle: "); Serial.println(gps.angle);
+          Serial.print("Altitude: "); Serial.println(gps.altitude);
+          Serial.print("Satellites: "); Serial.println((int)gps.satellites);
         }
         
-        Serial.print("Fix: "); Serial.print((int)gps.fix);
-        Serial.print(" quality: "); Serial.println((int)gps.fixquality);
-        Serial.print("Location: ");
-        Serial.print(gps.latitude, 4); Serial.print(gps.lat);
-        Serial.print(", "); 
-        Serial.print(gps.longitude, 4); Serial.println(gps.lon);
-        Serial.print("Location (in degrees, works with Google Maps): ");
-        Serial.print(gps.latitudeDegrees, 4);
-        Serial.print(", "); 
-        Serial.println(gps.longitudeDegrees, 4);
+        // Print Time
+        int hour = gps.hour;
+        int minute = gps.minute;
+        bool pm = false;
         
-        Serial.print("Speed (knots): "); Serial.println(gps.speed);
-        Serial.print("Angle: "); Serial.println(gps.angle);
-        Serial.print("Altitude: "); Serial.println(gps.altitude);
-        Serial.print("Satellites: "); Serial.println((int)gps.satellites);
-      }
-      
-      // Print Time
-      int hour = gps.hour;
-      int minute = gps.minute;
-      bool pm = false;
-      
-      if (hour > 12) {
-        hour -= 12;
-        pm = true;
-      }
-      
-      tft.print(' ');
-      if (hour < 10) { tft.print('0'); tft.print(hour, DEC); } else { tft.print(hour, DEC); };
-      tft.print(':');
-      if (minute < 10) { tft.print('0'); tft.print(minute, DEC); } else { tft.print(minute, DEC); };
-      if (pm) { tft.print(" PM "); } else { tft.print(" AM "); };
-  
-      tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
-      tft.print(' ');
-  
-      // Print Local / World Map
-      tft.setCursor(248, 225);
-      tft.setTextColor(ILI9340_BLACK, PIP_GREEN_2);
-  
-      if (menuMode) {
-        tft.print(" LOCAL MAP ");
-      } else {
-        tft.print(" WORLD MAP ");
+        if (hour > 12) {
+          hour -= 12;
+          pm = true;
+        }
+        
+        tft.print(' ');
+        if (hour < 10) { tft.print('0'); tft.print(hour, DEC); } else { tft.print(hour, DEC); };
+        tft.print(':');
+        if (minute < 10) { tft.print('0'); tft.print(minute, DEC); } else { tft.print(minute, DEC); };
+        if (pm) { tft.print(" PM "); } else { tft.print(" AM "); };
+    
+        tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+        tft.print(' ');
+    
+        // Print Local / World Map
+        tft.setCursor(248, 225);
+        tft.setTextColor(ILI9340_BLACK, PIP_GREEN_2);
+    
+        if (menuMode) {
+          tft.print(" LOCAL MAP ");
+        } else {
+          tft.print(" WORLD MAP ");
+        }
       }
     }
-  }*/
+  }
 
   // Status Bar
   /*if (status_timer > millis())  status_timer = millis();
@@ -606,8 +618,10 @@ void loop() {
 void loadScreenMain(int newScreen) {
   Serial.print(F("Main Screen: "));
   Serial.println(newScreen);
-  
-  //fona.FMradio(false);
+
+  if (ENABLE_RADIO) {
+    fona.FMradio(false);
+  }
     
   switch(newScreen) {
     case 0:
@@ -633,7 +647,9 @@ void loadScreenMain(int newScreen) {
       loadPip(PIP_4, true);
 
       // Radio
-      fona.FMradio(true, AUDIO_OUTPUT);
+      if (ENABLE_RADIO) {
+        fona.FMradio(true, AUDIO_OUTPUT);
+      }
       loadMenuData(0);
       
       break;
@@ -654,18 +670,49 @@ void loadScreenMain(int newScreen) {
   encoder.write(0);
   drawSubScreen(currentSubScreen, true);
 
-  //play("tab.wav");
-
-  /*int playStatic = random(3);
-
-  if (playStatic == 0) {
-    play("static0.wav");
-  }*/
+  if (ENABLE_AUDIO) {
+    //play("tab.wav");
+  
+    int playStatic = random(3);
+  
+    if (playStatic == 0) {
+      //play("static0.wav");
+    }
+  }
 
   // Reset Menu Option
   currentMenuOption = 0;
   menuOffset = 0;
   menuMode = false;
+}
+
+void loadScreenSub(int newSubScreen) {
+  newSubScreen = drawSubScreen(newSubScreen, false);
+
+  if (ENABLE_AUDIO) {
+    //play("tab.wav");
+  }
+
+  if (newSubScreen != currentSubScreen) {
+    currentSubScreen = newSubScreen;
+    currentMenuOption = 0;
+    renderSubMenu(currentMenuOption);
+  } else {
+    encoder.write(newSubScreen * 2);
+  }
+}
+
+void loadScreenMenu(int menuOption) {
+  int newMenu = updateMenuOptions(menuOption, currentMenuOption);
+  
+  //play("scroll.wav");
+
+  currentMenuOption = newMenu;
+  renderSubMenu(newMenu);
+  
+  if (newMenu != menuOption) {
+    encoder.write(newMenu * 2);
+  }
 }
 
 // Status Bar
@@ -832,16 +879,18 @@ int updateMenuOptions(int newMenu, int previousMenu) {
 
 void loadMenuData(int current) {
   // Only Radio at the moment
-  if (menuOptionsData[current] != "") {
-    int station = menuOptionsData[current].toInt();
-
-    Serial.print("New Station: ");
-    Serial.println(station);
-    
-    if (fona.tuneFMradio(station)) {
-      Serial.println(F("New Station: Tuned!"));
-    } else {
-      Serial.println(F("New Station: failed..."));
+  if (ENABLE_RADIO) {
+    if (menuOptionsData[current] != "") {
+      int station = menuOptionsData[current].toInt();
+  
+      Serial.print("New Station: ");
+      Serial.println(station);
+      
+      if (fona.tuneFMradio(station)) {
+        Serial.println(F("New Station: Tuned!"));
+      } else {
+        Serial.println(F("New Station: failed..."));
+      }
     }
   }
 }
@@ -914,7 +963,7 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
 }
 
 int drawSubScreen(int current, bool force) {
-  if (currentScreen == RADIO_SCREEN) {
+  if (ENABLE_RADIO && currentScreen == RADIO_SCREEN) {
     // Fall back on volume no sub screens
     radioVolume += current;
 
