@@ -475,6 +475,11 @@ void loop() {
         case ']':
           loadScreenMenu(currentMenuOption + 1);
           break;
+
+        case 'b':
+          menuMode = !menuMode;
+          reloadGpsImage = true;
+          break;
           
         default:
           delay(500);
@@ -598,6 +603,16 @@ void loop() {
           tft.print(" WORLD MAP ");
         }
       }
+    }
+  } else {
+    if (currentScreen == GPS_SCREEN && reloadGpsImage) {
+      if (menuMode) {
+        bmpDraw(MAP_LOCAL, MAP_POSX, MAP_POSY);
+      } else {
+        bmpDraw(MAP_WORLD, MAP_POSX, MAP_POSY);
+      }
+
+      reloadGpsImage = false;
     }
   }
 
@@ -963,20 +978,22 @@ void loadSubScreens(File &pip, uint16_t x, uint16_t y) {
 }
 
 int drawSubScreen(int current, bool force) {
-  if (ENABLE_RADIO && currentScreen == RADIO_SCREEN) {
-    // Fall back on volume no sub screens
-    radioVolume += current;
-
-    if (radioVolume > RADIO_MAXVOL) {
-      radioVolume = RADIO_MAXVOL;
-    } else if (radioVolume < 0) {
-      radioVolume = 0;
+  if (currentScreen == RADIO_SCREEN) {
+    if (ENABLE_RADIO) {
+      // Fall back on volume no sub screens
+      radioVolume += current;
+  
+      if (radioVolume > RADIO_MAXVOL) {
+        radioVolume = RADIO_MAXVOL;
+      } else if (radioVolume < 0) {
+        radioVolume = 0;
+      }
+  
+      Serial.print("Radio Volume: ");
+      Serial.println(radioVolume);
+  
+      fona.setFMVolume(radioVolume);
     }
-
-    Serial.print("Radio Volume: ");
-    Serial.println(radioVolume);
-
-    fona.setFMVolume(radioVolume);
     
     return currentSubScreen;
   }
