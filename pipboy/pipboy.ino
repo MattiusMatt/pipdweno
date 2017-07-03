@@ -39,9 +39,11 @@
 // TFT Pins
 // Teensy: 11 = MOSI, 12 = MISO, 13 = SCK0
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
+int currentBrightness = 100;
 #define TFT_DC 24
 #define TFT_RST 25
 #define TFT_CS 26
+#define TFT_BACKLIGHT 2
 
 // SD Pin
 #define SD_CS 27
@@ -287,6 +289,9 @@ bool enableTFT() {
   tft.setTextColor(ILI9340_GREEN);
   tft.setTextSize(1);
 
+  pinMode(TFT_BACKLIGHT, OUTPUT);
+  analogWrite(TFT_BACKLIGHT, currentBrightness);
+
   return true;
 }
 
@@ -480,12 +485,32 @@ void loop() {
           menuMode = !menuMode;
           reloadGpsImage = true;
           break;
+
+        case '+':
+          setBacklight(currentBrightness + 50);
+          break;
+
+        case '-':
+          setBacklight(currentBrightness - 50);
+          break;
+
+        case 'l':
+          if (currentBrightness > 0) {
+            setBacklight(0);
+          } else {
+            setBacklight(255);
+          }
+          break;
           
         default:
           delay(500);
           break;
       }
     }
+  }
+  
+  if (currentScreen == RADIO_SCREEN) {
+    updateRadioWave();
   }
 
   // GPS
@@ -628,6 +653,43 @@ void loop() {
 }
 
 // Helper functions
+/*
+int waveStartX = 180;
+int waveStartY = 85;
+int maxWaveHeight = 30;
+int maxWaveLength = 80;
+
+int currentWaveX = waveStartX;
+int currentWaveY = waveStartY;
+
+bool upwardWave = false;
+*/
+void updateRadioWave() {
+/*  int endX = currentWaveX + 10;
+  int endY;
+
+  if (upwardWave) {
+    endY = currentWaveY + 10;
+  } else {
+    endY = currentWaveY - 10;
+  }
+
+  if (endY => waveStartY + maxWaveHeight || endY <= waveStartY - maxWaveHeight) {
+    upwardWave = !upwardWave;
+  }
+
+  tft.fillRect(endX + 5, waveStartY - maxWaveHeight - 10, 10, maxWaveHeight * 2 + 20, ILI9340_BLACK);
+  tft.drawLine(currentWaveX, currentWaveY, endX, endY, PIP_GREEN);
+  
+  currentWaveX = endX;
+  currentWaveY = endY;
+
+  if (endX > waveStartX + maxWaveLength) {
+    currentWaveX = waveStartX;
+  }
+
+  delay(500);*/
+}
 
 // Screen Functions
 void loadScreenMain(int newScreen) {
@@ -728,6 +790,23 @@ void loadScreenMenu(int menuOption) {
   if (newMenu != menuOption) {
     encoder.write(newMenu * 2);
   }
+}
+
+void setBacklight(int value) {
+  currentBrightness = value;
+  
+  if (currentBrightness > 255) {
+    currentBrightness = 255;
+  }
+
+  if (currentBrightness < 0) {
+    currentBrightness = 0;
+  }
+  
+  analogWrite(TFT_BACKLIGHT, currentBrightness);
+
+  Serial.print(F("Brightness: "));
+  Serial.println(currentBrightness);
 }
 
 // Status Bar
