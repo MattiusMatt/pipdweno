@@ -312,7 +312,9 @@ void runLoadSequence() {
   // Vault Boy Loading
   tft.fillScreen(ILI9340_BLACK);
   bmpDraw("l.bmp", 95, 35);
-  delay(1000);
+  delay(2000);
+
+  loadScreenMain(0);
 }
 
 // Running
@@ -653,42 +655,31 @@ void loop() {
 }
 
 // Helper functions
-/*
-int waveStartX = 180;
-int waveStartY = 85;
-int maxWaveHeight = 30;
-int maxWaveLength = 80;
 
-int currentWaveX = waveStartX;
-int currentWaveY = waveStartY;
+double waveStartX = 180;
+double waveStartY = 85;
+double waveLength = 20;
 
-bool upwardWave = false;
-*/
 void updateRadioWave() {
-/*  int endX = currentWaveX + 10;
-  int endY;
-
-  if (upwardWave) {
-    endY = currentWaveY + 10;
-  } else {
-    endY = currentWaveY - 10;
-  }
-
-  if (endY => waveStartY + maxWaveHeight || endY <= waveStartY - maxWaveHeight) {
-    upwardWave = !upwardWave;
-  }
-
-  tft.fillRect(endX + 5, waveStartY - maxWaveHeight - 10, 10, maxWaveHeight * 2 + 20, ILI9340_BLACK);
-  tft.drawLine(currentWaveX, currentWaveY, endX, endY, PIP_GREEN);
+  /*double x1 = 0;
+  double y1 = 0;
   
-  currentWaveX = endX;
-  currentWaveY = endY;
+  double y2 = 0;
+  
+  double yEx = waveStartY;
+  double eF = 5;
 
-  if (endX > waveStartX + maxWaveLength) {
-    currentWaveX = waveStartX;
+  for (double x = 0; x < waveLength; x += 0.1)
+  {
+      y2 = sin(x);
+
+      tft.drawLine(waveStartX + x1 * eF, y1 * eF + yEx, waveStartX + x * eF, y2 * eF + yEx, PIP_GREEN);
+
+      x1 = x;
+      y1 = y2;
   }
 
-  delay(500);*/
+  delay(1000);*/
 }
 
 // Screen Functions
