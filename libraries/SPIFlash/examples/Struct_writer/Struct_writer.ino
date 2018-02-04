@@ -45,6 +45,7 @@
 
 
 
+//SPIFlash flash(SS1, &SPI1);       //Use this constructor if using an SPI bus other than the default SPI. Only works with chips with more than one hardware SPI bus
 SPIFlash flash;
 
 
@@ -54,6 +55,7 @@ struct Configuration {
   float RLDR;                   // Resistance calculation of potential divider with LDR
   bool light;
   uint8_t adc;
+  uint8_t arr[8];
 };
 Configuration configuration;
 
@@ -62,11 +64,7 @@ void setup() {
 #if defined (ARDUINO_SAMD_ZERO) || (__AVR_ATmega32U4__)
   while (!Serial) ; // Wait for Serial monitor to open
 #endif
-  #if defined (ARDUINO_ARCH_ESP32)
-  randomSeed(65535537);
-#else
   randomSeed(analogRead(LDR));
-#endif
   Serial.print(F("Initialising Flash memory"));
   for (int i = 0; i < 10; ++i)
   {
@@ -85,12 +83,17 @@ void setup() {
   configuration.RLDR = 889.32;
   configuration.light = true;
   configuration.adc = 5;
+  for (uint8_t i = 0; i < 8; i++) {
+    configuration.arr[i] = i;
+  }
 #endif
 
 #ifdef SENSOR
   readLDR();
 #endif
-
+  if (flash.eraseChip()) {
+    Serial.println("Chip has been erased");
+  }
   if (flash.writeAnything(_addr, configuration))
     Serial.println ("Data write successful");
   else
@@ -101,13 +104,20 @@ void setup() {
   Serial.println(configuration.RLDR);
   Serial.println(configuration.light);
   Serial.println(configuration.adc);
-
+  for (uint8_t i = 0; i < 8; i++) {
+    Serial.print(configuration.arr[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
   Serial.println("Saved!");
   configuration.lux = 0;
   configuration.vOut = 0;
   configuration.RLDR = 0;
   configuration.light = 0;
   configuration.adc = 0;
+  for (uint8_t i = 0; i < 8; i++) {
+    configuration.arr[i] = 0;
+  }
   Serial.println();
   Serial.println("Local values set to 0");
   Serial.println(configuration.lux);
@@ -115,9 +125,14 @@ void setup() {
   Serial.println(configuration.RLDR);
   Serial.println(configuration.light);
   Serial.println(configuration.adc);
+  for (uint8_t i = 0; i < 8; i++) {
+    Serial.print(configuration.arr[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
   Serial.println();
   flash.readAnything(_addr, configuration);
-  flash.eraseSector(_addr, 0);
+  flash.eraseSector(_addr);
 
   Serial.println("After reading");
   Serial.println(configuration.lux);
@@ -125,6 +140,11 @@ void setup() {
   Serial.println(configuration.RLDR);
   Serial.println(configuration.light);
   Serial.println(configuration.adc);
+  for (uint8_t i = 0; i < 8; i++) {
+    Serial.print(configuration.arr[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
 
 }
 

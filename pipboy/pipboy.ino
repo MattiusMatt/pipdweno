@@ -1,5 +1,5 @@
 #include <Adafruit_GPS.h>
-#include <Adafruit_ILI9340.h>
+#include "Adafruit_ILI9341.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_FONA.h>
 #include <gfxfont.h>
@@ -40,13 +40,12 @@
 // Teensy: 11 = MOSI, 12 = MISO, 13 = SCK0
 // pin 11 (51) = MOSI, pin 12 (50) = MISO, pin 13 (52) = SCK
 int currentBrightness = 100;
-#define TFT_DC 24
-#define TFT_RST 25
-#define TFT_CS 26
-#define TFT_BACKLIGHT 2
+#define TFT_DC 25
+#define TFT_CS 24
+#define TFT_BACKLIGHT 6
 
 // SD Pin
-#define SD_CS 27
+#define SD_CS BUILTIN_SDCARD
 
 // GPS
 #define GPS_SCREEN 3
@@ -95,7 +94,7 @@ uint8_t fona_type;
 #define AUDIO_OUTPUT FONA_EXTAUDIO
 
 // TFT
-Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 // Pip Screens
 const char PIP_0[] = "0.pip";
@@ -286,7 +285,7 @@ bool enableTFT() {
   // TFT
   tft.begin();
   tft.setRotation(3);
-  tft.setTextColor(ILI9340_GREEN);
+  tft.setTextColor(ILI9341_GREEN);
   tft.setTextSize(1);
 
   pinMode(TFT_BACKLIGHT, OUTPUT);
@@ -299,18 +298,18 @@ void runLoadSequence() {
   Serial.println(F("Running load sequence"));
   
   // Splash 0
-  tft.fillScreen(ILI9340_BLACK);
+  tft.fillScreen(ILI9341_BLACK);
   loadText("0.txt", 0, 0, 0);
   delay(1000);
 
   // Loading
-  tft.fillScreen(ILI9340_BLACK);
+  tft.fillScreen(ILI9341_BLACK);
   loadText("1.txt", 0, 0, 20);
   //Serial.print("Free RAM: "); Serial.println(getFreeRam(), DEC);
   delay(1000);
 
   // Vault Boy Loading
-  tft.fillScreen(ILI9340_BLACK);
+  tft.fillScreen(ILI9341_BLACK);
   bmpDraw("l.bmp", 95, 35);
   delay(2000);
 
@@ -567,7 +566,7 @@ void loop() {
         tft.print(gps.longitudeDegrees, 4);
         tft.print(' ');
     
-        tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+        tft.setTextColor(PIP_GREEN, ILI9341_BLACK);
         tft.print(' ');
         tft.setTextColor(PIP_GREEN, PIP_GREEN_3);
         
@@ -617,12 +616,12 @@ void loop() {
         if (minute < 10) { tft.print('0'); tft.print(minute, DEC); } else { tft.print(minute, DEC); };
         if (pm) { tft.print(" PM "); } else { tft.print(" AM "); };
     
-        tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+        tft.setTextColor(PIP_GREEN, ILI9341_BLACK);
         tft.print(' ');
     
         // Print Local / World Map
         tft.setCursor(248, 225);
-        tft.setTextColor(ILI9340_BLACK, PIP_GREEN_2);
+        tft.setTextColor(ILI9341_BLACK, PIP_GREEN_2);
     
         if (menuMode) {
           tft.print(" LOCAL MAP ");
@@ -661,7 +660,7 @@ double waveStartY = 85;
 double waveLength = 20;
 
 void updateRadioWave() {
-  /*double x1 = 0;
+  double x1 = 0;
   double y1 = 0;
   
   double y2 = 0;
@@ -679,7 +678,7 @@ void updateRadioWave() {
       y1 = y2;
   }
 
-  delay(1000);*/
+  delay(500);
 }
 
 // Screen Functions
@@ -818,7 +817,7 @@ void drawBatt(bool fromScratch) {
       tft.drawRect(291, 8, 20, 10, PIP_GREEN);
     }
     
-    tft.fillRect(292, 9, 18, 8, ILI9340_BLACK);
+    tft.fillRect(292, 9, 18, 8, ILI9341_BLACK);
     tft.fillRect(291 + (20 - batWidth), 8, batWidth, 10, PIP_GREEN);
   }
 }
@@ -904,10 +903,10 @@ void drawMenuOptions(int current) {
   for (uint8_t i = menuOffset; i < renderItems + menuOffset; i++) {
     if (i == current) {
       tft.fillRect(menu_x - 5, menu_y - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, PIP_GREEN);
-      tft.setTextColor(ILI9340_BLACK, PIP_GREEN);
+      tft.setTextColor(ILI9341_BLACK, PIP_GREEN);
     } else {
-      tft.fillRect(menu_x - 5, menu_y - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, ILI9340_BLACK);
-      tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
+      tft.fillRect(menu_x - 5, menu_y - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, ILI9341_BLACK);
+      tft.setTextColor(PIP_GREEN, ILI9341_BLACK);
     }
     
     tft.setCursor(menu_x, menu_y);
@@ -945,14 +944,14 @@ int updateMenuOptions(int newMenu, int previousMenu) {
   int menu_y_old = MENU_START_Y + (MENU_ITEM_HEIGHT * previousMenu);
   
   // Overwrite old menu item
-  tft.fillRect(MENU_START_X - 5, menu_y_old - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, ILI9340_BLACK);
+  tft.fillRect(MENU_START_X - 5, menu_y_old - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, ILI9341_BLACK);
   tft.setTextColor(PIP_GREEN);
   tft.setCursor(MENU_START_X, menu_y_old);
   tft.print(menuOptions[previousMenu]);
 
   // Overwrite new menu item
   tft.fillRect(MENU_START_X - 5, menu_y_new - 5, MENU_ITEM_WIDTH, MENU_ITEM_HEIGHT - 2, PIP_GREEN);
-  tft.setTextColor(ILI9340_BLACK);
+  tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(MENU_START_X, menu_y_new);
   tft.print(menuOptions[newMenu]);
 
@@ -983,7 +982,7 @@ void loadMenuData(int current) {
 void renderSubMenu(int current) {
   if (noOfMenuOptions == 0) { return; }
   
-  tft.fillRect(160, 35, 159, 190, ILI9340_BLACK);
+  tft.fillRect(160, 35, 159, 190, ILI9341_BLACK);
   
   String subMenu = "";
   subMenu.concat(currentScreen);
@@ -1082,16 +1081,16 @@ int drawSubScreen(int current, bool force) {
   
   tft.setTextSize(1);
   tft.setCursor(subscreen_x, subscreen_y);
-  tft.fillRect(0, 25, 320, 10, ILI9340_BLACK);
+  tft.fillRect(0, 25, 320, 10, ILI9341_BLACK);
 
   for (uint8_t i = current; i < current + 3; i++) {
-    tft.setTextColor(menuColours[i - current], ILI9340_BLACK);
+    tft.setTextColor(menuColours[i - current], ILI9341_BLACK);
     
     tft.print(subScreens[i]);
     tft.print(" ");
   }
 
-  tft.fillRect(0, 35, 320, 185, ILI9340_BLACK);
+  tft.fillRect(0, 35, 320, 185, ILI9341_BLACK);
 
   String subScreen = "";
   subScreen.concat(currentScreen);
@@ -1172,7 +1171,7 @@ void loadPip(const char screen[], bool mainScreen) {
       // Reset Sub Screens
       noOfSubScreens = 0;
 
-      tft.fillScreen(ILI9340_BLACK);
+      tft.fillScreen(ILI9341_BLACK);
       //drawBatt(true);
     }
 
@@ -1468,7 +1467,7 @@ void drawPosition(double centreLat, double centreLon, double posLat, double posL
   y2 = ty2 + locationY;
 
   tft.fillTriangle(x0, y0, x1, y1, x2, y2, PIP_GREEN);
-  tft.drawTriangle(x0, y0, x1, y1, x2, y2, ILI9340_BLACK);
+  tft.drawTriangle(x0, y0, x1, y1, x2, y2, ILI9341_BLACK);
 }
 
 // Map Download
@@ -1533,8 +1532,8 @@ void downloadMap(bool localMap, const char lat[], const char lon[]) {
     }
 
     // Blank out Map
-    tft.setTextColor(PIP_GREEN, ILI9340_BLACK);
-    tft.fillRect(0, 25, 320, 200, ILI9340_BLACK);
+    tft.setTextColor(PIP_GREEN, ILI9341_BLACK);
+    tft.fillRect(0, 25, 320, 200, ILI9341_BLACK);
     tft.setCursor(0,30);
     
     tft.println(F("Downloading new map..."));
@@ -1611,7 +1610,7 @@ void downloadMap_Resume(bool localMap, const char imageName[], const char lat[],
 
     if (!mapDownloading) {
       atCommand("AT+HTTPTERM");
-      tft.fillRect(0, 25, 320, 200, ILI9340_BLACK);
+      tft.fillRect(0, 25, 320, 200, ILI9341_BLACK);
       bmpDraw(imageName, MAP_POSX, MAP_POSY);
 
       File locationWriter;
@@ -1818,7 +1817,7 @@ void bmpDraw(const char filename[], uint16_t x, uint16_t y) {
             g = sdbuffer[buffidx++];
             r = sdbuffer[buffidx++];
 
-            tft.pushColor(tft.Color565(r,g,b));
+            tft.pushColor(tft.color565(r,g,b));
 
             /*if (b < 255 && g < 255 && r < 255) {
               tft.pushColor(tft.Color565(r,g,b));
